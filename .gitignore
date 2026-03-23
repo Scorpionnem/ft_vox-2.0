@@ -1,0 +1,8 @@
+external/
+obj/
+*.o
+*.d
+
+*.vck
+
+ft_vox

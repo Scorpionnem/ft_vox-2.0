@@ -1,0 +1,74 @@
+#include "App.hpp"
+#include "Shader.hpp"
+#include "Camera.hpp"
+
+#include <stdexcept>
+#include <iostream>
+
+#include <imgui.h>
+
+void	updateCamera(Camera &cam, const Window::Events &events)
+{
+	float	speed = 25 * events.getDeltaTime();
+	float	sensibility = 50 * events.getDeltaTime();
+
+	if (events.getKey(SDLK_w))
+		cam.pos = cam.pos + cam.front * speed;
+	if (events.getKey(SDLK_s))
+		cam.pos = cam.pos - cam.front * speed;
+	if (events.getKey(SDLK_SPACE))
+		cam.pos = cam.pos + cam.up * speed;
+	if (events.getKey(SDLK_LSHIFT))
+		cam.pos = cam.pos - cam.up * speed;
+	if (events.getKey(SDLK_a))
+		cam.pos = cam.pos - normalize(cross(cam.front, cam.up)) * speed;
+	if (events.getKey(SDLK_d))
+		cam.pos = cam.pos + normalize(cross(cam.front, cam.up)) * speed;
+	if (events.getKey(SDLK_UP))
+		cam.pitch += sensibility * 2;
+	if (events.getKey(SDLK_DOWN))
+		cam.pitch -= sensibility * 2;
+	if (events.getKey(SDLK_RIGHT))
+		cam.yaw += sensibility * 2;
+	if (events.getKey(SDLK_LEFT))
+		cam.yaw -= sensibility * 2;
+
+	cam.update(events.getDeltaTime(), events.getAspectRatio());
+}
+
+void	App::_loop(void)
+{
+	Camera	cam;
+
+	while (_window.is_open())
+	{
+		const Window::Events	&events = _window.pollEvents();
+		if (events.getKey(SDLK_ESCAPE))
+		{
+			_window.close();
+			break ;
+		}
+
+		updateCamera(cam, events);
+
+		if (ImGui::Begin("ft_vox"))
+		{
+			ImGui::Text("FPS: %.2f", 1.0 / events.getDeltaTime());
+		}
+		ImGui::End();
+
+		_window.render();
+	}
+}
+
+void	App::_init()
+{
+	_window.open("ft_vox", 1024, 768);
+}
+
+void	App::run(void)
+{
+	_init();
+
+	_loop();
+}
