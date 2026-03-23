@@ -52,8 +52,6 @@ void	App::_loop(void)
 	shader.load(GL_FRAGMENT_SHADER, "assets/shaders/mesh.fs");
 	shader.link();
 
-	world.update(genThreads, 0);
-
 	while (_window.is_open())
 	{
 		const Window::Events	&events = _window.pollEvents();
@@ -66,7 +64,7 @@ void	App::_loop(void)
 		updateCamera(cam, events);
 
 		world.setUpdateCenter(cam.pos);
-		// world.update(genThreads, events.getDeltaTime());
+		world.update(genThreads, events.getDeltaTime());
 
 		auto	view = world.getVision(cam, Vec3i(4));
 
