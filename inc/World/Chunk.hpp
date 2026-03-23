@@ -29,8 +29,8 @@ using BlockStateId = 		uint32_t;
 
 struct	Vertex
 {
-	Vertex(){}
-	Vertex(Vec3f pos, Vec3f normal, Vec2f uv)
+	constexpr Vertex(){}
+	constexpr Vertex(Vec3f pos, Vec3f normal, Vec2f uv)
 	{
 		this->pos = pos;
 		this->normal = normal;
@@ -43,8 +43,8 @@ struct	Vertex
 
 struct	Face
 {
-	Face(){}
-	Face(Vertex v1, Vertex v2, Vertex v3)
+	constexpr Face(){}
+	constexpr Face(Vertex v1, Vertex v2, Vertex v3)
 	{
 		this->v1 = v1;
 		this->v2 = v2;
@@ -57,7 +57,6 @@ struct	Face
 
 class	Chunk
 {
-	std::vector<Face>	_mesh;
 	public:
 		enum class	State
 		{
@@ -122,6 +121,9 @@ class	Chunk
 
 		uint	VAO;
 		uint	VBO;
+
+		uint64_t						_mesh_size;
+		std::vector<Vertex>				_mesh;
 	private:
 		inline bool	_isInBounds(const ChunkLocalVec3i &pos)
 		{

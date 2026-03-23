@@ -6,35 +6,35 @@
 template <typename T>
 struct	Vec2
 {
-	Vec2() : x(0), y(0) {}
-	Vec2(T x, T y) : x(x), y(y) {}
-	Vec2(T xy) : x(xy), y(xy) {}
+	constexpr Vec2() : x(0), y(0) {}
+	constexpr Vec2(T x, T y) : x(x), y(y) {}
+	constexpr Vec2(T xy) : x(xy), y(xy) {}
 
 	template <typename U>
-	Vec2(const Vec2<U>& other) : x(static_cast<T>(other.x)), y(static_cast<T>(other.y)) {}
+	constexpr Vec2(const Vec2<U>& other) : x(static_cast<T>(other.x)), y(static_cast<T>(other.y)) {}
 
-	Vec2 operator+(const Vec2 &v) const
+	constexpr Vec2 operator+(const Vec2 &v) const
 	{
 		return (Vec2(x + v.x, y + v.y));
 	}
-	Vec2 operator-(const Vec2 &v) const
+	constexpr Vec2 operator-(const Vec2 &v) const
 	{
 		return (Vec2(x - v.x, y - v.y));
 	}
-	Vec2 operator*(const Vec2 &v) const
+	constexpr Vec2 operator*(const Vec2 &v) const
 	{
 		return (Vec2(x * v.x, y * v.y));
 	}
-	Vec2 operator/(const Vec2 &v) const
+	constexpr Vec2 operator/(const Vec2 &v) const
 	{
 		return (Vec2(x / v.x, y / v.y));
 	}
-	bool operator==(const Vec2 &v) const
+	constexpr bool operator==(const Vec2 &v) const
 	{
 		return (x == v.x && y == v.y);
 	}
 
-	T	length()
+	constexpr T	length() const
 	{
 		return (std::sqrt(x * x + y * y));
 	}

@@ -7,49 +7,49 @@
 template <typename T>
 struct	Vec3
 {
-	Vec3() : x(0), y(0), z(0) {}
-	Vec3(T x, T y, T z) : x(x), y(y), z(z) {}
-	Vec3(T xyz) : x(xyz), y(xyz), z(xyz) {}
+	constexpr Vec3() : x(0), y(0), z(0) {}
+	constexpr Vec3(T x, T y, T z) : x(x), y(y), z(z) {}
+	constexpr Vec3(T xyz) : x(xyz), y(xyz), z(xyz) {}
 
 	template <typename U>
-	Vec3(const Vec3<U>& other) : x(static_cast<T>(other.x)), y(static_cast<T>(other.y)), z(static_cast<T>(other.z)) {}
+	constexpr Vec3(const Vec3<U>& other) : x(static_cast<T>(other.x)), y(static_cast<T>(other.y)), z(static_cast<T>(other.z)) {}
 
-	Vec3 operator+(const Vec3 &v) const
+	constexpr Vec3 operator+(const Vec3 &v) const
 	{
 		return (Vec3(x + v.x, y + v.y, z + v.z));
 	}
-	Vec3 operator-(const Vec3 &v) const
+	constexpr Vec3 operator-(const Vec3 &v) const
 	{
 		return (Vec3(x - v.x, y - v.y, z - v.z));
 	}
-	Vec3 operator*(const Vec3 &v) const
+	constexpr Vec3 operator*(const Vec3 &v) const
 	{
 		return (Vec3(x * v.x, y * v.y, z * v.z));
 	}
-	Vec3 operator/(const Vec3 &v) const
+	constexpr Vec3 operator/(const Vec3 &v) const
 	{
 		return (Vec3(x / v.x, y / v.y, z / v.z));
 	}
-	bool operator==(const Vec3 &v) const
+	constexpr bool operator==(const Vec3 &v) const
 	{
 		return (x == v.x && y == v.y && z == v.z);
 	}
 
-	Vec3 operator*(T s) const
+	constexpr Vec3 operator*(T s) const
 	{
 		return Vec3(x * s, y * s, z * s);
 	}
-	Vec3 operator/(T s) const
+	constexpr Vec3 operator/(T s) const
 	{
 		return Vec3(x / s, y / s, z / s);
 	}
 
-	T	length() const
+	constexpr T	length() const
 	{
 		return (std::sqrt(x * x + y * y + z * z));
 	}
 
-	uint64_t	hash() const
+	constexpr uint64_t	hash() const
 	{
 		const uint64_t BITS = 21;
 		const uint64_t MASK = (1ULL << BITS) - 1;
