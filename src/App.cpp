@@ -1,6 +1,7 @@
 #include "App.hpp"
 #include "Shader.hpp"
 #include "Camera.hpp"
+#include "World.hpp"
 
 #include <stdexcept>
 #include <iostream>
@@ -40,6 +41,19 @@ void	App::_loop(void)
 {
 	Camera	cam;
 
+	World	world;
+
+	ThreadPool	genThreads;
+	genThreads.add(4);
+
+	Shader	shader;
+
+	shader.load(GL_VERTEX_SHADER, "assets/shaders/mesh.vs");
+	shader.load(GL_FRAGMENT_SHADER, "assets/shaders/mesh.fs");
+	shader.link();
+
+	world.update(genThreads, 0);
+
 	while (_window.is_open())
 	{
 		const Window::Events	&events = _window.pollEvents();
@@ -50,6 +64,22 @@ void	App::_loop(void)
 		}
 
 		updateCamera(cam, events);
+
+		world.setUpdateCenter(cam.pos);
+		// world.update(genThreads, events.getDeltaTime());
+
+		auto	view = world.getVision(cam, Vec3i(4));
+
+		shader.setMat4f("view", cam.getViewMatrix());
+		shader.setMat4f("proj", perspective<float>(90, events.getAspectRatio(), 0.1, 1000.0));
+
+		for (auto chunk : view)
+		{
+			if (chunk->getState() < Chunk::State::UPLOADED)
+				chunk->upload();
+			else
+				chunk->draw(shader);
+		}
 
 		if (ImGui::Begin("ft_vox"))
 		{

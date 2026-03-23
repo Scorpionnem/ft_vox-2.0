@@ -6,7 +6,7 @@
 /*   By: mbatty <mbatty@student.42angouleme.fr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/02 16:04:06 by mbatty            #+#    #+#             */
-/*   Updated: 2026/03/23 10:05:49 by mbatty           ###   ########.fr       */
+/*   Updated: 2026/03/23 12:25:07 by mbatty           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,11 +23,11 @@ class	Camera
 		{
 			float	A, B, C, D;
 			void	normalize();
-			Vec3f	getNormal()
+			Vec3f	getNormal() const
 			{
 				return (Vec3f(A, B, C));
 			}
-			float	getDist(Vec3f point)
+			float	getDist(Vec3f point) const
 			{
 				return (dot(getNormal(), point) + D);
 			}
@@ -35,7 +35,7 @@ class	Camera
 		struct	Frustum
 		{
 			Plane top, bottom, right, left, zNear, zFar;
-			bool	isInside(Vec3f minCorner, Vec3f maxCorner);
+			bool	isInside(Vec3f minCorner, Vec3f maxCorner) const;
 		};
 	public:
 		Camera() : Camera(Vec3f(0)) {}

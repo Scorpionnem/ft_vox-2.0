@@ -26,6 +26,7 @@ SRCS :=	main\
 		Core/Window\
 		Core/Camera\
 		Core/Resources/Shader\
+		World/Chunk\
 
 
 INCLUDE_DIRS :=	$(addprefix -I, $(INCLUDE_DIRS))

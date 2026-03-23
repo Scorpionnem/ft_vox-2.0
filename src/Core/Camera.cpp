@@ -6,7 +6,7 @@
 /*   By: mbatty <mbatty@student.42angouleme.fr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/07 16:08:20 by mbatty            #+#    #+#             */
-/*   Updated: 2026/03/23 10:06:18 by mbatty           ###   ########.fr       */
+/*   Updated: 2026/03/23 12:24:06 by mbatty           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -95,7 +95,7 @@ void	Camera::_updatePlaneNormals(float aspectRatio)
 	frustum.right.normalize();
 }
 
-bool	Camera::Frustum::isInside(Vec3f minCorner, Vec3f maxCorner)
+bool	Camera::Frustum::isInside(Vec3f minCorner, Vec3f maxCorner) const
 {
 	Vec3d	point = Vec3d(top.A >= 0 ? maxCorner.x : minCorner.x, top.B >= 0 ? maxCorner.y : minCorner.y, top.C >= 0 ? maxCorner.z : minCorner.z);
 	if (top.getDist(point) < 0)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <ostream>
 #include <cstdint>
 
 template <typename T>
@@ -11,7 +12,7 @@ struct	Vec3
 	Vec3(T xyz) : x(xyz), y(xyz), z(xyz) {}
 
 	template <typename U>
-	Vec3(const Vec3<U>& other) : x(static_cast<T>(other.x)), y(static_cast<T>(other.y)) {}
+	Vec3(const Vec3<U>& other) : x(static_cast<T>(other.x)), y(static_cast<T>(other.y)), z(static_cast<T>(other.z)) {}
 
 	Vec3 operator+(const Vec3 &v) const
 	{
@@ -48,8 +49,28 @@ struct	Vec3
 		return (std::sqrt(x * x + y * y + z * z));
 	}
 
+	uint64_t	hash() const
+	{
+		const uint64_t BITS = 21;
+		const uint64_t MASK = (1ULL << BITS) - 1;
+		const int64_t  BIAS = 1LL << (BITS - 1);
+
+		uint64_t ux = static_cast<uint64_t>(static_cast<int64_t>(x) + BIAS) & MASK;
+		uint64_t uy = static_cast<uint64_t>(static_cast<int64_t>(y) + BIAS) & MASK;
+		uint64_t uz = static_cast<uint64_t>(static_cast<int64_t>(z) + BIAS) & MASK;
+
+		return (ux << (BITS * 2)) | (uy << (BITS * 1)) | (uz << (BITS * 0));
+	}
+
 	T	x, y, z;
 };
+
+template <typename T>
+std::ostream &operator<<(std::ostream &s, Vec3<T> vec)
+{
+	s << vec.x << " " << vec.y << " " << vec.z;
+	return (s);
+}
 
 using Vec3i = Vec3<int32_t>;
 using Vec3u = Vec3<uint32_t>;
