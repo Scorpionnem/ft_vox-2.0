@@ -12,6 +12,8 @@
 #include <iostream>
 #include <unistd.h>
 
+#include <imgui.h>
+
 class	ThreadPool
 {
 	public:
@@ -69,6 +71,18 @@ class	ThreadPool
 			for (auto &task : tasks)
 				_tasks.emplace_back(task);
 			_cv_task.notify_all();
+		}
+
+		void	imgui()
+		{
+			if (ImGui::Begin("Threads"))
+			{
+				std::unique_lock<std::mutex> lock(_queue_mutex);
+
+				ImGui::Text("Tasks: %ld", _tasks.size());
+				ImGui::Text("Working Threads: %d", _active_tasks.load());
+			}
+			ImGui::End();
 		}
 	private:
 		void	_worker()

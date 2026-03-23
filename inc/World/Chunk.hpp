@@ -55,6 +55,8 @@ struct	Face
 	Vertex	v3;
 };
 
+class	World;
+
 class	Chunk
 {
 	public:
@@ -79,8 +81,9 @@ class	Chunk
 			// Local block state table
 		};
 	public:
-		Chunk(const ChunkWorldVec3i &pos)
+		Chunk(const ChunkWorldVec3i &pos, World *world)
 		{
+			_world = world;
 			_pos = pos;
 		}
 		~Chunk() {}
@@ -119,11 +122,13 @@ class	Chunk
 
 		std::atomic<Chunk::State>		_state = Chunk::State::NONE;
 
-		uint	VAO;
-		uint	VBO;
+		uint	VAO = 0;
+		uint	VBO = 0;
 
 		uint64_t						_mesh_size;
 		std::vector<Vertex>				_mesh;
+
+		World							*_world;
 	private:
 		inline bool	_isInBounds(const ChunkLocalVec3i &pos)
 		{

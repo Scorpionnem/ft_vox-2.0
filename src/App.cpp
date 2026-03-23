@@ -52,6 +52,8 @@ void	App::_loop(void)
 	shader.load(GL_FRAGMENT_SHADER, "assets/shaders/mesh.fs");
 	shader.link();
 
+	bool	showDebug = true;
+
 	while (_window.is_open())
 	{
 		const Window::Events	&events = _window.pollEvents();
@@ -79,11 +81,19 @@ void	App::_loop(void)
 				chunk->draw(shader);
 		}
 
-		if (ImGui::Begin("ft_vox"))
+		if (events.getKeyPressed(SDLK_F3))
+			showDebug = !showDebug;
+		if (showDebug)
 		{
-			ImGui::Text("FPS: %.2f", 1.0 / events.getDeltaTime());
+			world.imgui();
+			cam.imgui();
+			genThreads.imgui();
+			if (ImGui::Begin("ft_vox"))
+			{
+				ImGui::Text("FPS: %.2f", 1.0 / events.getDeltaTime());
+			}
+			ImGui::End();
 		}
-		ImGui::End();
 
 		_window.render();
 	}

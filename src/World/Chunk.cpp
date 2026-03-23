@@ -1,6 +1,17 @@
 #include "Chunk.hpp"
+#include "World.hpp"
 
 #include <iostream>
+
+constexpr const Vec3i	DIR_OFFSET[6] =
+{
+	Vec3i(0, 1, 0), // TOP
+	Vec3i(0, -1, 0), // BOTTOM
+	Vec3i(0, 0, 1), // NORTH
+	Vec3i(0, 0, -1), // SOUTH
+	Vec3i(1, 0, 0), // EAST
+	Vec3i(-1, 0, 0), // WEST
+};
 
 void	Chunk::generate(/*Generator *gen*/)
 {
@@ -22,6 +33,12 @@ void	Chunk::generate(/*Generator *gen*/)
 					setBlock(pos, 0);
 			}
 	_state = Chunk::State::GENERATED;
+	for (int dir = 0; dir < 6; dir++)
+	{
+		std::shared_ptr<Chunk> chunk = _world->getChunk(_pos + DIR_OFFSET[dir]);
+		if (chunk && chunk->getState() >= Chunk::State::MESHED)
+			chunk->mesh();
+	}
 	mesh();
 }
 
@@ -29,6 +46,11 @@ void	Chunk::generate(/*Generator *gen*/)
 
 void	Chunk::upload()
 {
+	if (VAO != 0)
+		glDeleteVertexArrays(1, &VAO);
+	if (VBO != 0)
+		glDeleteBuffers(1, &VBO);
+
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 
@@ -52,16 +74,6 @@ void	Chunk::upload()
 	_mesh_size = _mesh.size();
 	_mesh.clear();
 }
-
-constexpr const Vec3i	FACE_OFFSET[6] =
-{
-	Vec3i(0, 1, 0), // TOP
-	Vec3i(0, -1, 0), // BOTTOM
-	Vec3i(0, 0, 1), // NORTH
-	Vec3i(0, 0, -1), // SOUTH
-	Vec3i(1, 0, 0), // EAST
-	Vec3i(-1, 0, 0), // WEST
-};
 
 constexpr const Vec2f	UV00(0.f, 0.f);
 constexpr const Vec2f	UV10(1.f, 0.f);
@@ -148,6 +160,17 @@ void	Chunk::mesh()
 {
 	_mesh.clear();
 
+	std::shared_ptr<Chunk>	neighbours[6] = {0};
+
+	for (int dir = 0; dir < 6; dir++)
+	{
+		std::shared_ptr<Chunk> chunk = _world->getChunk(_pos + DIR_OFFSET[dir]);
+		if (chunk && chunk->getState() >= Chunk::State::GENERATED)
+			neighbours[dir] = chunk;
+	}
+
+	ChunkLocalVec3i	pos;
+
 	ChunkLocalVec3i	blockPos;
 	for (blockPos.x = 0; blockPos.x < CHUNK_SIZE; blockPos.x++)
 		for (blockPos.y = 0; blockPos.y < CHUNK_SIZE; blockPos.y++)
@@ -162,7 +185,17 @@ void	Chunk::mesh()
 				{
 					for (int dir = 0; dir < 6; dir++)
 					{
-						if (_isInBounds(blockPos + FACE_OFFSET[dir]) && getBlock(blockPos + FACE_OFFSET[dir]) == 0)
+						block = 0;
+
+						ChunkLocalVec3i	thisChunkPos = blockPos + DIR_OFFSET[dir];
+						ChunkLocalVec3i	neighbourChunkPos = blockPos + DIR_OFFSET[dir] - (CHUNK_SIZE * DIR_OFFSET[dir]);
+
+						if (_isInBounds(thisChunkPos))
+							block = getBlock(thisChunkPos);
+						else if (neighbours[dir] && neighbours[dir]->_isInBounds(neighbourChunkPos))
+							block = neighbours[dir]->getBlock(neighbourChunkPos);
+
+						if (block == 0)
 						{
 							Face	f1 = FACE1[dir];
 							Face	f2 = FACE2[dir];

@@ -6,7 +6,7 @@
 /*   By: mbatty <mbatty@student.42angouleme.fr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/07 16:08:20 by mbatty            #+#    #+#             */
-/*   Updated: 2026/03/23 12:24:06 by mbatty           ###   ########.fr       */
+/*   Updated: 2026/03/23 17:31:36 by mbatty           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,8 +49,6 @@ void	Camera::update(float delta, float aspectRatio)
 
 	speed = length(pos - _lastPos) / delta;
 	_lastPos = pos;
-
-	imgui();
 }
 
 void	Camera::_updatePlaneNormals(float aspectRatio)

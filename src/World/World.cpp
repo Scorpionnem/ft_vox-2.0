@@ -1,5 +1,17 @@
 #include "World.hpp"
 
+#include <imgui.h>
+
+void	World::imgui()
+{
+	if (ImGui::Begin("World"))
+	{
+		ImGui::Text("Chunks: %ld", _chunks.size());
+		ImGui::InputInt3("Update distance", &_updateDistance.x);
+	}
+	ImGui::End();
+}
+
 void	World::update(ThreadPool &genThreads, double delta)
 {
 	ChunkWorldVec3i	updateStart = _updateCenter + _updateDistance;

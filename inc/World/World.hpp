@@ -15,6 +15,8 @@ class	World
 		World() {}
 		~World() {}
 
+		void	imgui();
+
 		// Updates all chunks around update centers (players) Generates chunks if needed giving them to the given thread pool
 		void	update(ThreadPool &genThreads, double delta);
 
@@ -28,6 +30,8 @@ class	World
 
 		std::shared_ptr<Chunk>	getChunk(const ChunkWorldVec3i &pos)
 		{
+			std::unique_lock<std::mutex>	lock(_chunksMutex);
+
 			ChunkPosHash	hash = pos.hash();
 
 			auto find = _chunks.find(hash);
@@ -39,7 +43,9 @@ class	World
 	private:
 		std::shared_ptr<Chunk>	_addChunk(const ChunkWorldVec3i &pos)
 		{
-			std::shared_ptr<Chunk>	chunk = std::make_shared<Chunk>(pos);
+			std::unique_lock<std::mutex>	lock(_chunksMutex);
+
+			std::shared_ptr<Chunk>	chunk = std::make_shared<Chunk>(pos, this);
 
 			_chunks.insert(std::make_pair(pos.hash(), chunk));
 			return (chunk);
@@ -48,4 +54,6 @@ class	World
 
 		ChunkWorldVec3i	_updateCenter;
 		Vec3i			_updateDistance = Vec3i(4, 4, 4);
+
+		std::mutex	_chunksMutex;
 };
