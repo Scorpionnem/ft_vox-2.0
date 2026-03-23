@@ -53,6 +53,8 @@ void	App::_loop(void)
 	shader.link();
 
 	bool	showDebug = true;
+	float	fog_power = 4;
+	Vec3f	sky_color;
 
 	while (_window.is_open())
 	{
@@ -68,10 +70,19 @@ void	App::_loop(void)
 		world.setUpdateCenter(cam.pos);
 		world.update(genThreads, events.getDeltaTime());
 
-		auto	view = world.getVision(cam, Vec3i(4));
+		Vec3f	render_distance = Vec3f(4);
+
+		auto	view = world.getVision(cam, render_distance);
 
 		shader.setMat4f("view", cam.getViewMatrix());
 		shader.setMat4f("proj", perspective<float>(90, events.getAspectRatio(), 0.1, 1000.0));
+
+		shader.setVec3f("RENDER_DISTANCE", render_distance * CHUNK_SIZE);
+		shader.setVec3f("VIEW_POS", cam.pos);
+		shader.setFloat("FOG_POWER", fog_power);
+		shader.setVec3f("FOG_COLOR", sky_color);
+
+		glClearColor(sky_color.x, sky_color.y, sky_color.z, 1.0);
 
 		for (auto chunk : view)
 		{
@@ -90,6 +101,9 @@ void	App::_loop(void)
 			if (ImGui::Begin("ft_vox"))
 			{
 				ImGui::Text("FPS: %.2f", 1.0 / events.getDeltaTime());
+				ImGui::InputFloat("Fog Power", &fog_power);
+				fog_power = std::clamp(fog_power, 1.0f, 16.0f);
+				ImGui::ColorPicker3("sky color", &sky_color.x);
 			}
 			ImGui::End();
 		}

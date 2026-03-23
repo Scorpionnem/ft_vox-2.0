@@ -242,6 +242,7 @@ void	Chunk::draw(Shader &shader)
 	shader.use();
 
 	shader.setMat4f("model", translate<float>(_pos * CHUNK_SIZE));
+	shader.setFloat("spawn_fade", _spawn_fade / SPAWN_FADE_TIME);
 
 	glBindVertexArray(VAO);
 	glDrawArrays(GL_TRIANGLES, 0, _mesh_size);

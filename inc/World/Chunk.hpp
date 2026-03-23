@@ -24,6 +24,8 @@ using WorldVec3i		= 	Vec3i;
 #define CHUNK_SIZE			32
 #define CHUNK_VOLUME		CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
 
+#define SPAWN_FADE_TIME 1.0
+
 /* DONT forget to implement local block state table when implementing blockstates */
 using ChunkBlockStateId = 	uint16_t;
 using BlockStateId = 		uint32_t;
@@ -92,6 +94,9 @@ class	Chunk
 
 		void	update(double delta)
 		{
+			_spawn_fade += delta;
+			if (_spawn_fade >= SPAWN_FADE_TIME)
+				_spawn_fade = SPAWN_FADE_TIME;
 			(void)delta;
 		}
 		void	generate(/*Generator *gen*/);
@@ -133,6 +138,8 @@ class	Chunk
 		std::vector<Vertex>				_mesh;
 
 		World							*_world;
+
+		float							_spawn_fade = 0;
 	private:
 		inline bool	_isInBounds(const ChunkLocalVec3i &pos)
 		{

@@ -15,7 +15,6 @@ void	Window::render()
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	SDL_GL_SwapWindow(_window);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
@@ -59,6 +58,8 @@ void	Window::open(const char *title, uint32_t width, uint32_t height)
 		SDL_Quit();
 		throw (std::runtime_error("Failed to initialize GLAD"));
 	}
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	glViewport(0, 0, _width, _height);
 
