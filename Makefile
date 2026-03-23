@@ -2,7 +2,7 @@ NAME :=	ft_vox
 
 
 CXX :=	c++
-CXXFLAGS :=	-g -MP -MMD -Wall -Wextra -Werror -std=c++17 # -fsanitize=address -fno-omit-frame-pointer
+CXXFLAGS :=	-g -MP -MMD -Wall -Wextra -Werror -std=c++17 #-fsanitize=address -fno-omit-frame-pointer
 LFLAGS := -lSDL2 -lGL
 
 EXTERNAL_DIR := external

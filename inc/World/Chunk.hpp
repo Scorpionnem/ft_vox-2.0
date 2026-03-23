@@ -9,6 +9,7 @@
 #include <cstring>
 #include <sys/stat.h>
 #include <atomic>
+#include <mutex>
 
 #include "Math.hpp"
 #include "Shader.hpp"
@@ -38,6 +39,7 @@ struct	Vertex
 	}
 	Vec3f	pos;
 	Vec3f	normal;
+	Vec3f	color;
 	Vec2f	uv;
 };
 
@@ -116,6 +118,8 @@ class	Chunk
 		Chunk::State	getState() {return (_state);}
 		ChunkWorldVec3i	getPos() {return (_pos);}
 	private:
+		std::mutex						_chunkMutex;
+
 		ChunkWorldVec3i					_pos;
 
 		std::vector<ChunkBlockStateId>	_blocks;

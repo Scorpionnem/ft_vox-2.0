@@ -6,7 +6,7 @@
 /*   By: mbatty <mbatty@student.42angouleme.fr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/07 16:08:20 by mbatty            #+#    #+#             */
-/*   Updated: 2026/03/23 17:31:36 by mbatty           ###   ########.fr       */
+/*   Updated: 2026/03/23 20:53:13 by mbatty           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,7 +53,7 @@ void	Camera::update(float delta, float aspectRatio)
 
 void	Camera::_updatePlaneNormals(float aspectRatio)
 {
-	Mat4f	vp = perspective<float>(70, aspectRatio, 0.01, 1000) * getViewMatrix();
+	Mat4f	vp = perspective<float>(90, aspectRatio, 0.01, 1000) * getViewMatrix();
 
 	frustum.left.A = vp(0,3) + vp(0,0);
 	frustum.left.B = vp(1,3) + vp(1,0);

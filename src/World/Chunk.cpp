@@ -46,6 +46,9 @@ void	Chunk::generate(/*Generator *gen*/)
 
 void	Chunk::upload()
 {
+	if (!_chunkMutex.try_lock())
+		return ;
+
 	if (VAO != 0)
 		glDeleteVertexArrays(1, &VAO);
 	if (VBO != 0)
@@ -65,14 +68,19 @@ void	Chunk::upload()
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
 	glEnableVertexAttribArray(1);
 
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
 	glEnableVertexAttribArray(2);
+
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
+	glEnableVertexAttribArray(3);
 
 	glBindVertexArray(0);
 
 	_state = Chunk::State::UPLOADED;
 	_mesh_size = _mesh.size();
 	_mesh.clear();
+
+	_chunkMutex.unlock();
 }
 
 constexpr const Vec2f	UV00(0.f, 0.f);
@@ -158,6 +166,8 @@ constexpr const Face	FACE2[6] =
 
 void	Chunk::mesh()
 {
+	std::unique_lock<std::mutex>	lock(_chunkMutex);
+
 	_mesh.clear();
 
 	std::shared_ptr<Chunk>	neighbours[6] = {0};
@@ -205,6 +215,15 @@ void	Chunk::mesh()
 							f2.v1.pos = blockPos + f2.v1.pos;
 							f2.v2.pos = blockPos + f2.v2.pos;
 							f2.v3.pos = blockPos + f2.v3.pos;
+
+							Vec3f	random_color = {(float)rand() / (float)RAND_MAX, (float)rand() / (float)RAND_MAX, (float)rand() / (float)RAND_MAX};
+
+							f2.v1.color = Vec3f(random_color);
+							f2.v2.color = Vec3f(random_color);
+							f2.v3.color = Vec3f(random_color);
+							f1.v1.color = Vec3f(random_color);
+							f1.v2.color = Vec3f(random_color);
+							f1.v3.color = Vec3f(random_color);
 							_mesh.push_back(f1.v1);
 							_mesh.push_back(f1.v2);
 							_mesh.push_back(f1.v3);

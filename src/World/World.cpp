@@ -1,4 +1,5 @@
 #include "World.hpp"
+#include "Chrono.hpp"
 
 #include <imgui.h>
 
@@ -29,7 +30,10 @@ void	World::update(ThreadPool &genThreads, double delta)
 				if (!chunk)
 				{
 					chunk = _addChunk(chunkPos);
-					tasks.push_back([chunk](){chunk->generate();});
+					tasks.push_back([chunk]()
+									{
+										chunk->generate();
+									});
 					continue ;
 				}
 

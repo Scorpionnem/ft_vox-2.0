@@ -10,7 +10,7 @@
 
 void	updateCamera(Camera &cam, const Window::Events &events)
 {
-	float	speed = 25 * events.getDeltaTime();
+	float	speed = 50 * events.getDeltaTime();
 	float	sensibility = 50 * events.getDeltaTime();
 
 	if (events.getKey(SDLK_w))
@@ -44,7 +44,7 @@ void	App::_loop(void)
 	World	world;
 
 	ThreadPool	genThreads;
-	genThreads.add(4);
+	genThreads.add(8);
 
 	Shader	shader;
 
@@ -77,8 +77,7 @@ void	App::_loop(void)
 		{
 			if (chunk->getState() < Chunk::State::UPLOADED)
 				chunk->upload();
-			else
-				chunk->draw(shader);
+			chunk->draw(shader);
 		}
 
 		if (events.getKeyPressed(SDLK_F3))
