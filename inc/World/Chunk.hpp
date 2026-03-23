@@ -13,6 +13,7 @@
 
 #include "Math.hpp"
 #include "Shader.hpp"
+#include "BlockType.hpp"
 
 /* Position in chunk local space (0-CHUNK_SIZE) */
 using ChunkLocalVec3i	= 	Vec3i;
@@ -97,7 +98,6 @@ class	Chunk
 			_spawn_fade += delta;
 			if (_spawn_fade >= SPAWN_FADE_TIME)
 				_spawn_fade = SPAWN_FADE_TIME;
-			(void)delta;
 		}
 		void	generate(/*Generator *gen*/);
 		void	mesh();

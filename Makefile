@@ -19,6 +19,7 @@ INCLUDE_DIRS :=	external/imgui/\
 				inc/Math/Vec\
 				inc/Math/Mat\
 				inc/World\
+				inc/World/Block\
 
 
 SRCS :=	main\
@@ -28,6 +29,9 @@ SRCS :=	main\
 		Core/Resources/Shader\
 		World/Chunk\
 		World/World\
+		World/Block/BlockProperty\
+		World/Block/BlockState\
+		World/Block/BlockType\
 
 
 INCLUDE_DIRS :=	$(addprefix -I, $(INCLUDE_DIRS))
