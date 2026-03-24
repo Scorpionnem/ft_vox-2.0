@@ -101,7 +101,14 @@ class	ThreadPool
 
 					latch.unlock();
 
-					task();
+					try
+					{
+						task();
+					}
+					catch(const std::exception &e)
+					{
+						(void)e;
+					}
 
 					latch.lock();
 					_active_tasks--;

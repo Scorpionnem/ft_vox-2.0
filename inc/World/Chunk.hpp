@@ -26,7 +26,7 @@ using WorldVec3i		= 	Vec3i;
 #define CHUNK_SIZE			32
 #define CHUNK_VOLUME		CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
 
-#define SPAWN_FADE_TIME 1.0
+#define SPAWN_FADE_TIME		0.3
 
 /* DONT forget to implement local block state table when implementing blockstates */
 using ChunkBlockStateId = 	uint16_t;
@@ -70,14 +70,20 @@ class	Chunk
 			_spawn_fade += delta;
 			if (_spawn_fade >= SPAWN_FADE_TIME)
 				_spawn_fade = SPAWN_FADE_TIME;
+
+			// for each updatable blocks do stuff
 		}
+
 		void	generate(/*Generator *gen*/);
 		void	mesh();
 		void	draw(Shader &shader);
 		void	upload();
 
+		/* Saves chunk data in a binary file (Only blocks) */
 		void	save(const std::string &path);
 		void	load(const std::string &path);
+		/* Tries to load a chunk, returns false instead of throwing */
+		bool	try_load(const std::string &path);
 
 		inline ChunkBlockStateId	getBlock(const ChunkLocalVec3i &pos)
 		{
@@ -92,20 +98,20 @@ class	Chunk
 			_blocks[_getBlockIndex(pos)] = block;
 		}
 
-		Chunk::State	getState() {return (_state);}
-		ChunkWorldVec3i	getPos() {return (_pos);}
+		Chunk::State	state() {return (_state);}
+		ChunkWorldVec3i	pos() {return (_pos);}
+
+		bool	check = true; // TODO Remove ts
 	private:
 		std::mutex						_chunkMutex;
-
-		ChunkWorldVec3i					_pos;
-
-		std::vector<ChunkBlockStateId>	_blocks;
-
 		std::atomic<Chunk::State>		_state = Chunk::State::NONE;
 
-		uint	VAO = 0;
-		uint	VBO = 0;
+		ChunkWorldVec3i					_pos;
+		std::vector<ChunkBlockStateId>	_blocks;
 
+		// need to abstract this
+		uint							VAO = 0;
+		uint							VBO = 0;
 		uint64_t						_mesh_size;
 		std::vector<Vertex>				_mesh;
 

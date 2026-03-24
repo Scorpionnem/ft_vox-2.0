@@ -18,7 +18,10 @@ void	World::update(ThreadPool &genThreads, double delta)
 	ChunkWorldVec3i	updateStart = _updateCenter + _updateDistance;
 	ChunkWorldVec3i	updateEnd = _updateCenter - _updateDistance;
 
-	std::vector<std::function<void(void)>>	tasks;
+	std::vector<std::shared_ptr<Chunk>>	chunks_to_gen;
+
+	for (auto [hash, chunk] : _chunks)
+		chunk->check = false;
 
 	ChunkWorldVec3i	chunkPos;
 	for (chunkPos.y = updateStart.y; chunkPos.y >= updateEnd.y; chunkPos.y--)
@@ -30,18 +33,36 @@ void	World::update(ThreadPool &genThreads, double delta)
 				if (!chunk)
 				{
 					chunk = _addChunk(chunkPos);
-					tasks.push_back([chunk]()
-									{
-										chunk->generate();
-									});
+					chunks_to_gen.push_back(chunk);
 					continue ;
 				}
 
-				if (chunk->getState() < Chunk::State::GENERATED)
+				chunk->check = true;
+
+				if (chunk->state() < Chunk::State::GENERATED)
 					continue ;
 
 				chunk->update(delta);
 			}
+	for (auto it = _chunks.begin(); it != _chunks.end();)
+	{
+		std::shared_ptr<Chunk>	chunk = it->second;
+
+		if (!chunk->check)
+			it = _chunks.erase(it);
+		else
+			it++;
+	}
+
+	std::sort(chunks_to_gen.begin(), chunks_to_gen.end(),
+	[this](std::shared_ptr<Chunk> c1, std::shared_ptr<Chunk> c2)
+	{
+		return (length(_updateCenter - ((c1->pos() * CHUNK_SIZE) + CHUNK_SIZE / 2)) < length(_updateCenter - ((c2->pos() * CHUNK_SIZE) + CHUNK_SIZE / 2)));
+	});
+
+	std::vector<std::function<void(void)>>	tasks;
+	for (std::shared_ptr<Chunk> chunk : chunks_to_gen)
+		tasks.push_back([chunk](){chunk->generate();});
 	genThreads.queue_task(tasks);
 }
 
@@ -61,17 +82,17 @@ std::vector<std::shared_ptr<Chunk>>	World::getVision(const Camera &cam, const Ve
 			{
 				std::shared_ptr<Chunk>	chunk = getChunk(chunkPos);
 
-				if (chunk == nullptr || chunk->getState() < Chunk::State::MESHED)
+				if (chunk == nullptr || chunk->state() < Chunk::State::MESHED)
 					continue ;
 
-				if (cam.frustum.isInside(Vec3(chunk->getPos() * CHUNK_SIZE), Vec3(chunk->getPos() * CHUNK_SIZE + CHUNK_SIZE)))
+				if (cam.frustum.isInside(Vec3(chunk->pos() * CHUNK_SIZE), Vec3(chunk->pos() * CHUNK_SIZE + CHUNK_SIZE)))
 					res.push_back(chunk);
 			}
 
 	std::sort(res.begin(), res.end(),
 	[&cam](std::shared_ptr<Chunk> c1, std::shared_ptr<Chunk> c2)
 	{
-		return (length(cam.pos - ((c1->getPos() * CHUNK_SIZE) + CHUNK_SIZE / 2)) > length(cam.pos - ((c2->getPos() * CHUNK_SIZE) + CHUNK_SIZE / 2)));
+		return (length(cam.pos - ((c1->pos() * CHUNK_SIZE) + CHUNK_SIZE / 2)) > length(cam.pos - ((c2->pos() * CHUNK_SIZE) + CHUNK_SIZE / 2)));
 	});
 	return (res);
 }

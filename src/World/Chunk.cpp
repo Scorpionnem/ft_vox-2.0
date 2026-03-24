@@ -41,9 +41,10 @@ void	Chunk::generate(/*Generator *gen*/)
 	for (int dir = 0; dir < 6; dir++)
 	{
 		std::shared_ptr<Chunk> chunk = _world->getChunk(_pos + DIR_OFFSET[dir]);
-		if (chunk && chunk->getState() >= Chunk::State::MESHED)
+		if (chunk && chunk->state() >= Chunk::State::MESHED)
 			chunk->mesh();
 	}
+
 	mesh();
 }
 
@@ -200,7 +201,7 @@ void	Chunk::mesh()
 	for (int dir = 0; dir < 6; dir++)
 	{
 		std::shared_ptr<Chunk> chunk = _world->getChunk(_pos + DIR_OFFSET[dir]);
-		if (chunk && chunk->getState() >= Chunk::State::GENERATED)
+		if (chunk && chunk->state() >= Chunk::State::GENERATED)
 			neighbours[dir] = chunk;
 	}
 
@@ -225,9 +226,12 @@ void	Chunk::mesh()
 						ChunkLocalVec3i	thisChunkPos = blockPos + DIR_OFFSET[dir];
 						ChunkLocalVec3i	neighbourChunkPos = blockPos + DIR_OFFSET[dir] - (CHUNK_SIZE * DIR_OFFSET[dir]);
 
+						if (!_isInBounds(thisChunkPos) && !neighbours[dir])
+							continue ;
+
 						if (_isInBounds(thisChunkPos))
 							cull_block = getBlock(thisChunkPos);
-						else if (neighbours[dir] && neighbours[dir]->_isInBounds(neighbourChunkPos))
+						else if (neighbours[dir]->_isInBounds(neighbourChunkPos))
 							cull_block = neighbours[dir]->getBlock(neighbourChunkPos);
 
 						if (cull_block == 0)
@@ -327,4 +331,18 @@ void	Chunk::load(const std::string &path)
 	_blocks.resize(CHUNK_VOLUME);
 
 	file.read(reinterpret_cast<char*>(_blocks.data()), CHUNK_VOLUME * sizeof(ChunkBlockStateId));
+}
+
+bool	Chunk::try_load(const std::string &path)
+{
+	try
+	{
+		load(path);
+		return (true);
+	}
+	catch (...)
+	{
+		return (false);
+	}
+	return (false);
 }

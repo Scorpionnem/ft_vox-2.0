@@ -95,7 +95,7 @@ void	App::_loop(void)
 
 		for (auto chunk : view)
 		{
-			if (chunk->getState() < Chunk::State::UPLOADED)
+			if (chunk->state() < Chunk::State::UPLOADED)
 				chunk->upload();
 			chunk->draw(shader);
 		}
