@@ -16,14 +16,23 @@ uniform float	FOG_POWER = 4;
 uniform vec3	RENDER_DISTANCE;
 uniform vec3	VIEW_POS;
 
+uniform sampler2D	atlas;
+
 void main()
 {
 	vec3	fogFactor = pow(length(VIEW_POS - vWorldPos) / RENDER_DISTANCE, vec3(FOG_POWER));
 	fogFactor = clamp(fogFactor, 0.0, 1.0);
 
-	vec3	color = vColor;
-	color = mix(color, FOG_COLOR, fogFactor);
-	color = mix(color, FOG_COLOR, 1.0 - spawn_fade);
+	vec4	color = texture(atlas, vUv);
 
-	outColor = vec4(color, 1.0);
+	color.rgb *= vColor;
+
+	float shadowForce = dot(vNormal, vec3(1, 1, 0.5));
+	shadowForce = clamp(shadowForce, 0.2, 1.0);
+	color.rgb *= shadowForce;
+
+	color.rgb = mix(color.rgb, FOG_COLOR, fogFactor);
+	color.rgb = mix(color.rgb, FOG_COLOR, 1.0 - spawn_fade);
+
+	outColor = color;
 }

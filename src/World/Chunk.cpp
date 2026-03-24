@@ -25,10 +25,15 @@ void	Chunk::generate(/*Generator *gen*/)
 			{
 				WorldVec3i	wp = pos + (_pos * CHUNK_SIZE);
 
-				int	y = (sin(wp.x / 8.0) + sin(wp.z / 8.0)) * 16;
+				int	y = ((sin(wp.x / 8.0) + sin(wp.y / 8.0) + sin(wp.z / 8.0))) * 512;
 
-				if (wp.y < y)
-					setBlock(pos, 1);
+				if (wp.y <= y)
+				{
+					if (wp.y == y)
+						setBlock(pos, 40);
+					else
+						setBlock(pos, 1);
+				}
 				else
 					setBlock(pos, 0);
 			}
@@ -164,6 +169,26 @@ constexpr const Face	FACE2[6] =
 	),
 };
 
+#define TEX_SIZE 16
+#define ATLAS_SIZE 256
+static Vec2f	getAtlasUV(Vec2f uv, int textureId)
+{
+	Vec2f	baseUV = uv;
+
+	int row = (TEX_SIZE - 1) - (textureId / TEX_SIZE);;
+	int col = textureId % TEX_SIZE;
+
+	Vec2f cellSize = Vec2f((float)TEX_SIZE / (float)ATLAS_SIZE);
+	Vec2f atlasOffset;
+	atlasOffset.x = (float)col * cellSize.x;
+	atlasOffset.y = (float)row * cellSize.y;
+	Vec2f atlasUV;
+	atlasUV.x = atlasOffset.x + baseUV.x * cellSize.x;
+	atlasUV.y = atlasOffset.y + baseUV.y * cellSize.y;
+
+	return (atlasUV);
+}
+
 void	Chunk::mesh()
 {
 	std::unique_lock<std::mutex>	lock(_chunkMutex);
@@ -195,17 +220,17 @@ void	Chunk::mesh()
 				{
 					for (int dir = 0; dir < 6; dir++)
 					{
-						block = 0;
+						BlockStateId	cull_block = 0;
 
 						ChunkLocalVec3i	thisChunkPos = blockPos + DIR_OFFSET[dir];
 						ChunkLocalVec3i	neighbourChunkPos = blockPos + DIR_OFFSET[dir] - (CHUNK_SIZE * DIR_OFFSET[dir]);
 
 						if (_isInBounds(thisChunkPos))
-							block = getBlock(thisChunkPos);
+							cull_block = getBlock(thisChunkPos);
 						else if (neighbours[dir] && neighbours[dir]->_isInBounds(neighbourChunkPos))
-							block = neighbours[dir]->getBlock(neighbourChunkPos);
+							cull_block = neighbours[dir]->getBlock(neighbourChunkPos);
 
-						if (block == 0)
+						if (cull_block == 0)
 						{
 							Face	f1 = FACE1[dir];
 							Face	f2 = FACE2[dir];
@@ -216,7 +241,11 @@ void	Chunk::mesh()
 							f2.v2.pos = blockPos + f2.v2.pos;
 							f2.v3.pos = blockPos + f2.v3.pos;
 
-							Vec3f	random_color = {(float)rand() / (float)RAND_MAX, (float)rand() / (float)RAND_MAX, (float)rand() / (float)RAND_MAX};
+							int		atlasId = block;
+
+							Vec3f	random_color = 1;
+							if (block == 40) // Is grass / leaves and all
+								random_color = Vec3f(0.05, 0.55, 0.05);
 
 							f2.v1.color = Vec3f(random_color);
 							f2.v2.color = Vec3f(random_color);
@@ -224,6 +253,13 @@ void	Chunk::mesh()
 							f1.v1.color = Vec3f(random_color);
 							f1.v2.color = Vec3f(random_color);
 							f1.v3.color = Vec3f(random_color);
+
+							f1.v1.uv = getAtlasUV(f1.v1.uv, atlasId);
+							f1.v2.uv = getAtlasUV(f1.v2.uv, atlasId);
+							f1.v3.uv = getAtlasUV(f1.v3.uv, atlasId);
+							f2.v1.uv = getAtlasUV(f2.v1.uv, atlasId);
+							f2.v2.uv = getAtlasUV(f2.v2.uv, atlasId);
+							f2.v3.uv = getAtlasUV(f2.v3.uv, atlasId);
 							_mesh.push_back(f1.v1);
 							_mesh.push_back(f1.v2);
 							_mesh.push_back(f1.v3);

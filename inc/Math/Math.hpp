@@ -4,6 +4,8 @@
 #include "Vec2.hpp"
 #include "Mat4.hpp"
 
+#include "Direction.hpp"
+
 inline float radians(float deg)
 {
 	return (deg * M_PI / 180.0f);

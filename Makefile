@@ -10,9 +10,11 @@ EXTERNAL_DIR := external
 INCLUDE_DIRS :=	external/imgui/\
 				/usr/include/SDL2/\
 				external/glad\
+				external/stb_image\
 				glad\
 				inc/\
 				inc/Core\
+				inc/Core/Mesh\
 				inc/Core/Resources\
 				inc/Utils\
 				inc/Math\
@@ -39,7 +41,8 @@ SRCS :=	$(addprefix src/, $(SRCS))
 SRCS :=	$(addsuffix .cpp, $(SRCS))
 
 
-SRCS +=	external/glad/glad.cpp
+SRCS +=	external/glad/glad.cpp\
+		external/stb_image/stb_image.cpp
 
 IMGUI := $(EXTERNAL_DIR)/imgui
 IMGUI_SRCS_RAW =	imgui.cpp\
@@ -59,7 +62,7 @@ OBJS =	$(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 DEPS =	$(SRCS:%.cpp=$(OBJ_DIR)/%.d)
 
 
-compile: imgui glad
+compile: imgui glad stb_image
 	@make -j all --no-print-directory
 
 all: $(NAME)
@@ -74,6 +77,16 @@ imgui: $(EXTERNAL_DIR)
 		echo "\033[31;1mDownloading imgui config\033[0m";\
 		git clone https://github.com/ocornut/imgui.git $(IMGUI);\
 		echo "\033[31;1mDownloaded imgui config\033[0m";\
+	fi
+
+stb_image: $(EXTERNAL_DIR)
+	@if ls external/stb_image | grep -q "stb_image.h"; then \
+		printf ""; \
+	else\
+		echo "\033[31;1mDownloading stb_image.h\033[0m"; \
+		mkdir -p external/stb_image; \
+		curl --silent -o external/stb_image/stb_image.h https://raw.githubusercontent.com/nothings/stb/master/stb_image.h;\
+		echo "\033[31;1mDownloaded stb_image.h\033[0m"; \
 	fi
 
 glad: $(EXTERNAL_DIR)

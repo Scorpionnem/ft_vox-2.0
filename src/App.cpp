@@ -1,5 +1,6 @@
 #include "App.hpp"
 #include "Shader.hpp"
+#include "Texture.hpp"
 #include "Camera.hpp"
 #include "World.hpp"
 
@@ -47,10 +48,15 @@ void	App::_loop(void)
 	genThreads.add(8);
 
 	Shader	shader;
-
 	shader.load(GL_VERTEX_SHADER, "assets/shaders/mesh.vs");
 	shader.load(GL_FRAGMENT_SHADER, "assets/shaders/mesh.fs");
 	shader.link();
+
+	shader.setInt("atlas", 0);
+
+	Texture	texture;
+	texture.load("assets/textures/atlas.png");
+	texture.upload();
 
 	bool	showDebug = true;
 	float	fog_power = 4;
@@ -74,6 +80,9 @@ void	App::_loop(void)
 
 		auto	view = world.getVision(cam, render_distance);
 
+		texture.bind(0);
+
+		shader.use();
 		shader.setMat4f("view", cam.getViewMatrix());
 		shader.setMat4f("proj", perspective<float>(90, events.getAspectRatio(), 0.1, 1000.0));
 

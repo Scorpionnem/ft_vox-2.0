@@ -6,6 +6,7 @@
 #include "Chunk.hpp"
 #include "Camera.hpp"
 #include "ThreadPool.hpp"
+#include "BlockType.hpp"
 
 using ChunkPosHash = uint64_t;
 

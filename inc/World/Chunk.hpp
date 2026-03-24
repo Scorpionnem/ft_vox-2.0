@@ -14,6 +14,7 @@
 #include "Math.hpp"
 #include "Shader.hpp"
 #include "BlockType.hpp"
+#include "Face.hpp"
 
 /* Position in chunk local space (0-CHUNK_SIZE) */
 using ChunkLocalVec3i	= 	Vec3i;
@@ -30,35 +31,6 @@ using WorldVec3i		= 	Vec3i;
 /* DONT forget to implement local block state table when implementing blockstates */
 using ChunkBlockStateId = 	uint16_t;
 using BlockStateId = 		uint32_t;
-
-struct	Vertex
-{
-	constexpr Vertex(){}
-	constexpr Vertex(Vec3f pos, Vec3f normal, Vec2f uv)
-	{
-		this->pos = pos;
-		this->normal = normal;
-		this->uv = uv;
-	}
-	Vec3f	pos;
-	Vec3f	normal;
-	Vec3f	color;
-	Vec2f	uv;
-};
-
-struct	Face
-{
-	constexpr Face(){}
-	constexpr Face(Vertex v1, Vertex v2, Vertex v3)
-	{
-		this->v1 = v1;
-		this->v2 = v2;
-		this->v3 = v3;
-	}
-	Vertex	v1;
-	Vertex	v2;
-	Vertex	v3;
-};
 
 class	World;
 

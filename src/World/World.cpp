@@ -67,5 +67,11 @@ std::vector<std::shared_ptr<Chunk>>	World::getVision(const Camera &cam, const Ve
 				if (cam.frustum.isInside(Vec3(chunk->getPos() * CHUNK_SIZE), Vec3(chunk->getPos() * CHUNK_SIZE + CHUNK_SIZE)))
 					res.push_back(chunk);
 			}
+
+	std::sort(res.begin(), res.end(),
+	[&cam](std::shared_ptr<Chunk> c1, std::shared_ptr<Chunk> c2)
+	{
+		return (length(cam.pos - ((c1->getPos() * CHUNK_SIZE) + CHUNK_SIZE / 2)) > length(cam.pos - ((c2->getPos() * CHUNK_SIZE) + CHUNK_SIZE / 2)));
+	});
 	return (res);
 }
