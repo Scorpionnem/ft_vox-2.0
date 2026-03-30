@@ -6,6 +6,8 @@
 
 #include "Direction.hpp"
 
+#include <cmath>
+
 inline float radians(float deg)
 {
 	return (deg * M_PI / 180.0f);
@@ -26,4 +28,21 @@ template <typename T>
 inline float	length(const Vec3<T> &v)
 {
 	return (std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z));
+}
+
+inline float	frac(float v)
+{
+	return (v - std::floor(v));
+}
+
+template <typename T>
+inline Vec3<T>	frac(const Vec3<T> &v)
+{
+	return (Vec3<T>(frac(v.x), frac(v.y), frac(v.z)));
+}
+
+template <typename T>
+inline Vec2<T>	frac(const Vec2<T> &v)
+{
+	return (Vec2<T>(frac(v.x), frac(v.y)));
 }

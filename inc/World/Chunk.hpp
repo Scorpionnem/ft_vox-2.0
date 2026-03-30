@@ -63,7 +63,11 @@ class	Chunk
 			_world = world;
 			_pos = pos;
 		}
-		~Chunk() {}
+		~Chunk()
+		{
+			glDeleteVertexArrays(1, &VAO);
+			glDeleteBuffers(1, &VBO);
+		}
 
 		void	update(double delta)
 		{
@@ -95,11 +99,22 @@ class	Chunk
 		{
 			if (!_isInBounds(pos))
 				throw std::runtime_error("setblock out of bounds");
-			_blocks[_getBlockIndex(pos)] = block;
+
+			ChunkBlockStateId	&b = _blocks[_getBlockIndex(pos)];
+
+			if (b == 0 && block != 0)
+				_non_air_blocks++;
+			else if (b != 0 && block == 0)
+				_non_air_blocks--;
+			b = block;
 		}
 
 		Chunk::State	state() {return (_state);}
 		ChunkWorldVec3i	pos() {return (_pos);}
+		bool			has_solid_blocks()
+		{
+			return (_non_air_blocks != 0);
+		}
 
 		bool	check = true; // TODO Remove ts
 	private:
@@ -110,9 +125,10 @@ class	Chunk
 		std::vector<ChunkBlockStateId>	_blocks;
 
 		// need to abstract this
-		uint							VAO = 0;
-		uint							VBO = 0;
-		uint64_t						_mesh_size;
+		uint32_t						VAO = 0;
+		uint32_t						VBO = 0;
+		uint64_t						_mesh_size = 0;
+		uint16_t						_non_air_blocks = 0;
 		std::vector<Vertex>				_mesh;
 
 		World							*_world;

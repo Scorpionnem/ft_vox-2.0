@@ -60,7 +60,7 @@ void	App::_loop(void)
 
 	bool	showDebug = true;
 	float	fog_power = 4;
-	Vec3f	sky_color;
+	Vec3f	sky_color(194 / 255.0, 235.0 / 255.0, 1.0);
 
 	while (_window.is_open())
 	{

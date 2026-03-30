@@ -1,5 +1,6 @@
 #include "Chunk.hpp"
 #include "World.hpp"
+#include "Noise.hpp"
 
 #include <iostream>
 
@@ -19,13 +20,25 @@ void	Chunk::generate(/*Generator *gen*/)
 
 	ChunkLocalVec3i	pos;
 
+	std::vector<int>	height_map;
+
+	height_map.resize(CHUNK_SIZE * CHUNK_SIZE);
+
+	for (pos.x = 0; pos.x < CHUNK_SIZE; pos.x++)
+		for (pos.z = 0; pos.z < CHUNK_SIZE; pos.z++)
+		{
+			WorldVec3i	wp = pos + (_pos * CHUNK_SIZE);
+
+			height_map[pos.x + pos.z * CHUNK_SIZE] = perlin(Vec2f(wp.x * 0.037, wp.z * 0.037)) * 64.0;
+		}
+
 	for (pos.x = 0; pos.x < CHUNK_SIZE; pos.x++)
 		for (pos.y = 0; pos.y < CHUNK_SIZE; pos.y++)
 			for (pos.z = 0; pos.z < CHUNK_SIZE; pos.z++)
 			{
 				WorldVec3i	wp = pos + (_pos * CHUNK_SIZE);
 
-				int	y = ((sin(wp.x / 8.0) + sin(wp.y / 8.0) + sin(wp.z / 8.0))) * 512;
+				int	y = height_map[pos.x + pos.z * CHUNK_SIZE];
 
 				if (wp.y <= y)
 				{
@@ -234,7 +247,7 @@ void	Chunk::mesh()
 						else if (neighbours[dir]->_isInBounds(neighbourChunkPos))
 							cull_block = neighbours[dir]->getBlock(neighbourChunkPos);
 
-						if (cull_block == 0)
+						if (cull_block == 0 && cull_block != block)
 						{
 							Face	f1 = FACE1[dir];
 							Face	f2 = FACE2[dir];

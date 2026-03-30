@@ -68,7 +68,7 @@ struct	Vec3
 template <typename T>
 std::ostream &operator<<(std::ostream &s, Vec3<T> vec)
 {
-	s << vec.x << " " << vec.y << " " << vec.z;
+	s << "[" << vec.x << " " << vec.y << " " << vec.z << "]";
 	return (s);
 }
 
@@ -106,4 +106,10 @@ template<typename T>
 Vec3<T> operator*(T s, const Vec3<T>& v)
 {
 	return Vec3<T>(v.x * s, v.y * s, v.z * s);
+}
+
+template<typename T>
+Vec3<T>	sin(const Vec3<T> &v)
+{
+	return (Vec3<T>(std::sin(v.x), std::sin(v.y), std::sin(v.z)));
 }

@@ -82,7 +82,7 @@ std::vector<std::shared_ptr<Chunk>>	World::getVision(const Camera &cam, const Ve
 			{
 				std::shared_ptr<Chunk>	chunk = getChunk(chunkPos);
 
-				if (chunk == nullptr || chunk->state() < Chunk::State::MESHED)
+				if (chunk == nullptr || chunk->state() < Chunk::State::MESHED || !chunk->has_solid_blocks())
 					continue ;
 
 				if (cam.frustum.isInside(Vec3(chunk->pos() * CHUNK_SIZE), Vec3(chunk->pos() * CHUNK_SIZE + CHUNK_SIZE)))

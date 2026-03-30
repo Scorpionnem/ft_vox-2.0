@@ -42,8 +42,28 @@ struct	Vec2
 	T	x, y;
 };
 
+
+template <typename T>
+std::ostream &operator<<(std::ostream &s, Vec2<T> vec)
+{
+	s << "[" << vec.x << " " << vec.y << "]";
+	return (s);
+}
+
 using Vec2i = Vec2<int32_t>;
 using Vec2u = Vec2<uint32_t>;
 using Vec2ul = Vec2<uint64_t>;
 using Vec2f = Vec2<float>;
 using Vec2d = Vec2<double>;
+
+template<typename T>
+T	dot(const Vec2<T> &v1, const Vec2<T> &v2)
+{
+	return (v1.x * v2.x + v1.y * v2.y);
+}
+
+template<typename T>
+Vec2<T>	sin(const Vec2<T> &v)
+{
+	return (Vec2<T>(std::sin(v.x), std::sin(v.y)));
+}

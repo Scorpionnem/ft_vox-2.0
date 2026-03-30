@@ -22,6 +22,7 @@ INCLUDE_DIRS :=	external/imgui/\
 				inc/Math/Mat\
 				inc/World\
 				inc/World/Block\
+				inc/World/Generation/Noise\
 
 
 SRCS :=	main\
@@ -34,6 +35,8 @@ SRCS :=	main\
 		World/Block/BlockProperty\
 		World/Block/BlockState\
 		World/Block/BlockType\
+		World/Generation/Noise/Perlin3D\
+		World/Generation/Noise/Perlin2D\
 
 
 INCLUDE_DIRS :=	$(addprefix -I, $(INCLUDE_DIRS))
