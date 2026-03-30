@@ -30,6 +30,7 @@ class	Shader
 			_id = 0;
 		}
 		void	setInt(const std::string &name, int val);
+		void	setBool(const std::string &name, bool val);
 		void	setFloat(const std::string &name, float val);
 		void	setVec3f(const std::string &name, Vec3f val);
 		void	setMat4f(const std::string &name, Mat4f val);

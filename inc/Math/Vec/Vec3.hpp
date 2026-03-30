@@ -113,3 +113,9 @@ Vec3<T>	sin(const Vec3<T> &v)
 {
 	return (Vec3<T>(std::sin(v.x), std::sin(v.y), std::sin(v.z)));
 }
+
+template<typename T>
+float	max(const Vec3<T> &v)
+{
+	return (std::max(std::max(v.x, v.y), v.z));
+}

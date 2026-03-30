@@ -60,7 +60,10 @@ void	App::_loop(void)
 
 	bool	showDebug = true;
 	float	fog_power = 4;
+	bool	fog_toggle = true;
 	Vec3f	sky_color(194 / 255.0, 235.0 / 255.0, 1.0);
+	Vec3f	render_distance = Vec3f(4);
+	Vec3f	fog_distance = render_distance * CHUNK_SIZE + CHUNK_SIZE;
 
 	while (_window.is_open())
 	{
@@ -76,8 +79,6 @@ void	App::_loop(void)
 		world.setUpdateCenter(cam.pos);
 		world.update(genThreads, events.getDeltaTime());
 
-		Vec3f	render_distance = Vec3f(4);
-
 		auto	view = world.getVision(cam, render_distance);
 
 		texture.bind(0);
@@ -90,6 +91,9 @@ void	App::_loop(void)
 		shader.setVec3f("VIEW_POS", cam.pos);
 		shader.setFloat("FOG_POWER", fog_power);
 		shader.setVec3f("FOG_COLOR", sky_color);
+		shader.setBool("FOG_TOGGLE", fog_toggle);
+		shader.setInt("CHUNK_SIZE", CHUNK_SIZE);
+		shader.setVec3f("FOG_DISTANCE", fog_distance);
 
 		glClearColor(sky_color.x, sky_color.y, sky_color.z, 1.0);
 
@@ -111,6 +115,8 @@ void	App::_loop(void)
 			{
 				ImGui::Text("FPS: %.2f", 1.0 / events.getDeltaTime());
 				ImGui::InputFloat("Fog Power", &fog_power);
+				ImGui::Checkbox("Toggle Fog", &fog_toggle);
+				ImGui::SliderFloat3("Fog Distance", &fog_distance.x, 0, max(render_distance * CHUNK_SIZE + CHUNK_SIZE));
 				fog_power = std::clamp(fog_power, 1.0f, 16.0f);
 				ImGui::ColorPicker3("sky color", &sky_color.x);
 			}
