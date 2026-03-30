@@ -14,6 +14,121 @@ constexpr const Vec3i	DIR_OFFSET[6] =
 	Vec3i(-1, 0, 0), // WEST
 };
 
+#define BLOCK_COBBLESTONE 16
+#define BLOCK_SANDSTONE 208
+#define BLOCK_BEDROCK 17
+#define BLOCK_GRAVEL 19
+#define BLOCK_GRASS 40
+#define BLOCK_STONE 1
+#define BLOCK_SAND 18
+#define BLOCK_DIRT 2
+#define BLOCK_AIR 0
+
+float smoothstep(float edge0, float edge1, float x)
+{
+	float t = std::clamp((x - edge0) / (edge1 - edge0), 0.0f, 1.0f);
+	return (t * t * (3.0 - 2.0 * t));
+}
+
+struct	Range
+{
+	Range(float min, float max)
+	{
+		this->min = min;
+		this->max = max;
+	}
+
+	bool	fit(float v)
+	{
+		return (v >= min && v <= max);
+	}
+	float	min;
+	float	max;
+};
+
+struct	Biome
+{
+	Range	continentalness;
+	Range	mountainess;
+	Range	riverness;
+
+	Range	temperature;
+	Range	humidity;
+
+	float	scale;
+	int		height;
+	int		min_height;
+
+	int		top_block;
+};
+
+Biome	BIOME_OCEAN = {
+	.continentalness = {-1, -0.2},
+	.mountainess = {0, 1},
+	.riverness = {0, 1},
+
+	.temperature = {0, 1},
+	.humidity = {0, 1},
+
+	.scale = 0.05,
+	.height = 8,
+	.min_height = 50,
+
+	.top_block = BLOCK_GRAVEL
+};
+
+Biome	BIOME_SHALLOW_OCEAN = {
+	.continentalness = {-0.2, 0.0},
+	.mountainess = {0, 1},
+	.riverness = {0, 1},
+
+	.temperature = {0, 1},
+	.humidity = {0, 1},
+
+	.scale = 0.015,
+	.height = 8,
+	.min_height = 56,
+
+	.top_block = BLOCK_SAND,
+};
+
+Biome	BIOME_PLAINS = {
+	.continentalness = {0.0, 0.4},
+	.mountainess = {0, 1},
+	.riverness = {0, 1},
+
+	.temperature = {0, 1},
+	.humidity = {0, 1},
+
+	.scale = 0.015,
+	.height = 32,
+	.min_height = 70,
+
+	.top_block = BLOCK_GRASS,
+};
+
+Biome	BIOME_MOUNTAINS = {
+	.continentalness = {0.4, 1},
+	.mountainess = {0, 1},
+	.riverness = {0, 1},
+
+	.temperature = {0, 1},
+	.humidity = {0, 1},
+
+	.scale = 0.010,
+	.height = 128,
+	.min_height = 80,
+
+	.top_block = BLOCK_STONE
+};
+
+std::vector<Biome>	ALL_BIOMES = {
+	BIOME_OCEAN,
+	BIOME_SHALLOW_OCEAN,
+	BIOME_PLAINS,
+	BIOME_MOUNTAINS,
+};
+
 void	Chunk::generate(/*Generator *gen*/)
 {
 	_blocks.resize(CHUNK_VOLUME);
@@ -21,20 +136,66 @@ void	Chunk::generate(/*Generator *gen*/)
 	ChunkLocalVec3i	pos;
 
 	std::vector<int>	height_map;
+	std::vector<Biome*>	biome_map;
 
 	height_map.resize(CHUNK_SIZE * CHUNK_SIZE);
+	biome_map.resize(CHUNK_SIZE * CHUNK_SIZE);
 
 	for (pos.x = 0; pos.x < CHUNK_SIZE; pos.x++)
 		for (pos.z = 0; pos.z < CHUNK_SIZE; pos.z++)
 		{
 			WorldVec3i	wp = pos + (_pos * CHUNK_SIZE);
 
-			height_map[pos.x + pos.z * CHUNK_SIZE] = perlin(Vec2f(wp.x * 0.037, wp.z * 0.037)) * 64.0;
+			float	continentalness = noise(Vec2f(wp.x, wp.z), 0.005, 1, 4);
+
+			/*
+				Compute each biome noise value (continent, mountain, temperature, humidity, river...)
+
+				then compute each biome heightmap for biomes that are over the treshold (dont compute heightmap for all possible biomes)
+
+				then do the blend and smoothing for all biomes we have
+			*/
+
+			std::vector<float>	biome_weights;
+			std::vector<int>	biome_heights;
+
+			float	biggest_weight = 0;
+
+			for (auto &biome : ALL_BIOMES)
+			{
+				float	weight = 1;
+				float	height = perlin(Vec2f(wp.x, wp.z) * biome.scale) * biome.height + biome.min_height;
+
+				float	continentalness_blend = 0.07;
+				weight = smoothstep(biome.continentalness.min, biome.continentalness.max, continentalness)
+						* (1.0 - smoothstep(biome.continentalness.min, biome.continentalness.max + continentalness_blend, continentalness));
+
+				biome_weights.push_back(weight);
+				biome_heights.push_back(height);
+
+				if (weight > biggest_weight)
+				{
+					biggest_weight = weight;
+					biome_map[pos.x + pos.z * CHUNK_SIZE] = &biome;
+				}
+			}
+
+			float total = 0.0f;
+			for (float w : biome_weights)
+				total += w;
+			for (float &w : biome_weights)
+				w /= total;
+
+			float height = 0.0f;
+			for (uint64_t i = 0; i < biome_weights.size(); i++)
+				height += biome_heights[i] * biome_weights[i];
+
+			height_map[pos.x + pos.z * CHUNK_SIZE] = height;
 		}
 
 	for (pos.x = 0; pos.x < CHUNK_SIZE; pos.x++)
-		for (pos.y = 0; pos.y < CHUNK_SIZE; pos.y++)
-			for (pos.z = 0; pos.z < CHUNK_SIZE; pos.z++)
+		for (pos.z = 0; pos.z < CHUNK_SIZE; pos.z++)
+			for (pos.y = 0; pos.y < CHUNK_SIZE; pos.y++)
 			{
 				WorldVec3i	wp = pos + (_pos * CHUNK_SIZE);
 
@@ -42,13 +203,15 @@ void	Chunk::generate(/*Generator *gen*/)
 
 				if (wp.y <= y)
 				{
-					if (wp.y == y)
-						setBlock(pos, 40);
-					else
-						setBlock(pos, 1);
+					if (wp.y == y) // Surface block
+						setBlock(pos, biome_map[pos.x + pos.z * CHUNK_SIZE]->top_block);
+					else if (wp.y == y - 1) // Sub-Surface block
+						setBlock(pos, BLOCK_DIRT);
+					else // Underground block
+						setBlock(pos, BLOCK_STONE);
 				}
 				else
-					setBlock(pos, 0);
+					setBlock(pos, BLOCK_AIR);
 			}
 	_state = Chunk::State::GENERATED;
 	for (int dir = 0; dir < 6; dir++)

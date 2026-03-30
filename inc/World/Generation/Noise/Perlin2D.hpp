@@ -48,3 +48,19 @@ float perlin(Vec2f value)
 	float	noise = lerp(lowerCells, upperCells, interpolatorY);
 	return (noise);
 }
+
+float	noise(const Vec2f &pos, float freq, float amp, int noisiness)
+{
+	float	res = 0;
+	for (int i = 0; i < noisiness; i++)
+	{
+		res += perlin(Vec2f(pos.x * freq, pos.y * freq)) * amp;
+
+		freq *= 2;
+		amp /= 2;
+	}
+
+	res = std::clamp(res, -1.0f, 1.0f);
+
+	return (res);
+}

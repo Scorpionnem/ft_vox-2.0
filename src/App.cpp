@@ -58,7 +58,7 @@ void	App::_loop(void)
 	texture.load("assets/textures/atlas.png");
 	texture.upload();
 
-	bool	showDebug = true;
+	bool	showDebug = false;
 	float	fog_power = 4;
 	bool	fog_toggle = true;
 	Vec3f	sky_color(194 / 255.0, 235.0 / 255.0, 1.0);
