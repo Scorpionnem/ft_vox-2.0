@@ -70,6 +70,17 @@ compile: imgui glad stb_image
 
 all: $(NAME)
 
+BUILD_DIR := build/
+ASSETS_DIR := assets/
+
+build: compile
+	@echo Packing build
+	@mkdir -p $(BUILD_DIR)
+	@cp $(NAME) $(BUILD_DIR)
+	@cp -r $(ASSETS_DIR) $(BUILD_DIR)
+	@cd $(BUILD_DIR) ; tar -czf ft_vox.tar.gz $(NAME) $(ASSETS_DIR)
+	@echo Finished packing build
+
 $(EXTERNAL_DIR):
 	@mkdir -p external
 
@@ -124,7 +135,9 @@ fclean: clean
 
 clean:
 	@echo Removed $(OBJ_DIR)
+	@echo Removed $(BUILD_DIR)
 	@rm -rf $(OBJ_DIR)
+	@rm -rf $(BUILD_DIR)
 
 .PHONY: all clean fclean re compile
 
