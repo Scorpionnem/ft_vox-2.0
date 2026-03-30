@@ -166,7 +166,7 @@ void	Chunk::generate(/*Generator *gen*/)
 				float	weight = 1;
 				float	height = perlin(Vec2f(wp.x, wp.z) * biome.scale) * biome.height + biome.min_height;
 
-				float	continentalness_blend = 0.07;
+				float	continentalness_blend = 0.2;
 				weight = smoothstep(biome.continentalness.min, biome.continentalness.max, continentalness)
 						* (1.0 - smoothstep(biome.continentalness.min, biome.continentalness.max + continentalness_blend, continentalness));
 
