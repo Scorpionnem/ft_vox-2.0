@@ -1,5 +1,6 @@
 external/
 obj/
+build/
 *.o
 *.d
 
