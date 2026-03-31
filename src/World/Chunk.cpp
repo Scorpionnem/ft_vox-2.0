@@ -14,6 +14,15 @@ constexpr const Vec3i	DIR_OFFSET[6] =
 	Vec3i(-1, 0, 0), // WEST
 };
 
+#define BLOCK_TERRACOTA 221
+#define BLOCK_BLACK_TERRACOTA 220
+#define BLOCK_BROWN_TERRACOTA 219
+#define BLOCK_ORANGE_TERRACOTA 218
+#define BLOCK_RED_TERRACOTA 217
+#define BLOCK_GRAY_TERRACOTA 233
+#define BLOCK_WHITE_TERRACOTA 234
+#define BLOCK_YELLOW_TERRACOTA 235
+
 #define BLOCK_COBBLESTONE 16
 #define BLOCK_SANDSTONE 208
 #define BLOCK_BEDROCK 17
@@ -57,9 +66,13 @@ struct	Biome
 	int		min_height;
 	int		noisiness;
 
-	int		top_block;
+	std::function<BlockStateId(WorldVec3i pos, int max_y)>	get_block;
 };
 
+BlockStateId	biome_deep_ocean_get_block(WorldVec3i, int)
+{
+	return (BLOCK_STONE);
+}
 Biome	BIOME_DEEP_OCEAN = {
 	.continentalness = {-1.0, -0.4},
 	.erosion = {0.1, 1},
@@ -73,9 +86,13 @@ Biome	BIOME_DEEP_OCEAN = {
 	.min_height = 0,
 	.noisiness = 1,
 
-	.top_block = BLOCK_STONE
+	.get_block = biome_deep_ocean_get_block
 };
 
+BlockStateId	biome_ocean_get_block(WorldVec3i, int)
+{
+	return (BLOCK_GRAVEL);
+}
 Biome	BIOME_OCEAN = {
 	.continentalness = {-0.4, 0.0},
 	.erosion = {-1, 1},
@@ -89,11 +106,15 @@ Biome	BIOME_OCEAN = {
 	.min_height = 30,
 	.noisiness = 1,
 
-	.top_block = BLOCK_GRAVEL
+	.get_block = biome_ocean_get_block
 };
 
+BlockStateId	biome_shallow_ocean_get_block(WorldVec3i, int)
+{
+	return (BLOCK_SANDSTONE);
+}
 Biome	BIOME_SHALLOW_OCEAN = {
-	.continentalness = {-0.4, 0.15},
+	.continentalness = {-0.4, 0.35},
 	.erosion = {0.3, 1},
 	.riverness = {0, 0},
 
@@ -105,9 +126,13 @@ Biome	BIOME_SHALLOW_OCEAN = {
 	.min_height = 54,
 	.noisiness = 1,
 
-	.top_block = BLOCK_SANDSTONE,
+	.get_block = biome_shallow_ocean_get_block,
 };
 
+BlockStateId	biome_beaches_get_block(WorldVec3i, int)
+{
+	return (BLOCK_SAND);
+}
 Biome	BIOME_BEACHES = {
 	.continentalness = {0, 0.1},
 	.erosion = {-0.2, 0.2},
@@ -121,15 +146,24 @@ Biome	BIOME_BEACHES = {
 	.min_height = 70,
 	.noisiness = 1,
 
-	.top_block = BLOCK_SAND,
+	.get_block = biome_beaches_get_block,
 };
 
+BlockStateId	biome_plains_get_block(WorldVec3i pos, int max_y)
+{
+	if (pos.y == max_y)
+		return (BLOCK_GRASS);
+	int	var = static_cast<int>(rand2dTo1d(Vec2i(pos.x, pos.z)) * 3);
+	if (pos.y >= max_y - (var + 1))
+		return (BLOCK_DIRT);
+	return (BLOCK_STONE);
+}
 Biome	BIOME_PLAINS = {
 	.continentalness = {0.2, 0.7},
 	.erosion = {0.0, 1},
 	.riverness = {0, 0},
 
-	.temperature = {0, 0},
+	.temperature = {-0.2, 0.2},
 	.humidity = {0, 0},
 
 	.scale = 0.015,
@@ -137,15 +171,23 @@ Biome	BIOME_PLAINS = {
 	.min_height = 85,
 	.noisiness = 1,
 
-	.top_block = BLOCK_GRASS,
+	.get_block = biome_plains_get_block,
 };
 
+BlockStateId	biome_highlands_get_block(WorldVec3i pos, int max_y)
+{
+	if (pos.y == max_y)
+		return (BLOCK_GRASS);
+	if (pos.y == max_y - 1)
+		return (BLOCK_DIRT);
+	return (BLOCK_STONE);
+}
 Biome	BIOME_HIGHLANDS = {
-	.continentalness = {0.4, 0.7},
+	.continentalness = {0.3, 0.7},
 	.erosion = {-1, 0.4},
 	.riverness = {0, 0},
 
-	.temperature = {0, 0},
+	.temperature = {-0.2, 0.2},
 	.humidity = {0, 0},
 
 	.scale = 0.025,
@@ -153,15 +195,19 @@ Biome	BIOME_HIGHLANDS = {
 	.min_height = 100,
 	.noisiness = 1,
 
-	.top_block = BLOCK_GRASS,
+	.get_block = biome_highlands_get_block,
 };
 
+BlockStateId	biome_mountains_get_block(WorldVec3i, int)
+{
+	return (BLOCK_STONE);
+}
 Biome	BIOME_MOUNTAINS = {
 	.continentalness = {0.37, 1},
 	.erosion = {-1, -0.0},
 	.riverness = {0, 0},
 
-	.temperature = {0, 0},
+	.temperature = {-0.2, 0.2},
 	.humidity = {0, 0},
 
 	.scale = 0.010,
@@ -169,7 +215,90 @@ Biome	BIOME_MOUNTAINS = {
 	.min_height = 120,
 	.noisiness = 5,
 
-	.top_block = BLOCK_STONE
+	.get_block = biome_mountains_get_block
+};
+
+BlockStateId	biome_mesa_mountains_get_block(WorldVec3i pos, int max_y)
+{
+	int	var = static_cast<int>(rand2dTo1d(Vec2i(pos.x, pos.z)) * 3);
+	if (pos.y >= max_y - (var + 5))
+	{
+		float	r = rand1dTo1d(pos.y);
+
+		if (r >= 0 && r < 0.125)
+			return (BLOCK_TERRACOTA);
+		if (r >= 0.125 && r < 0.250)
+			return (BLOCK_RED_TERRACOTA);
+		if (r >= 0.250 && r < 0.375)
+			return (BLOCK_YELLOW_TERRACOTA);
+		if (r >= 0.375 && r < 0.500)
+			return (BLOCK_BLACK_TERRACOTA);
+		if (r >= 0.500 && r < 0.625)
+			return (BLOCK_GRAY_TERRACOTA);
+		if (r >= 0.625 && r < 0.750)
+			return (BLOCK_WHITE_TERRACOTA);
+		if (r >= 0.750 && r < 0.875)
+			return (BLOCK_ORANGE_TERRACOTA);
+		if (r >= 0.875 && r <= 1.0)
+			return (BLOCK_BROWN_TERRACOTA);
+	}
+	return (BLOCK_STONE);
+}
+Biome	BIOME_MESA_MOUNTAINS = {
+	.continentalness = {0.37, 1},
+	.erosion = {-1, -0.0},
+	.riverness = {0, 0},
+
+	.temperature = {0.2, 1.0},
+	.humidity = {0, 0},
+
+	.scale = 0.03,
+	.height = 16,
+	.min_height = 180,
+	.noisiness = 3,
+
+	.get_block = biome_mesa_mountains_get_block
+};
+
+BlockStateId	biome_desert_plains_get_block(WorldVec3i pos, int max_y)
+{
+	if (pos.y == max_y)
+		return (BLOCK_SAND);
+	int	var = static_cast<int>(rand2dTo1d(Vec2i(pos.x, pos.z)) * 2);
+	if (pos.y >= max_y - (var + 1))
+		return (BLOCK_SANDSTONE);
+	return (BLOCK_STONE);
+}
+Biome	BIOME_DESERT_PLAINS = {
+	.continentalness = {0.2, 0.7},
+	.erosion = {0.0, 1},
+	.riverness = {0, 0},
+
+	.temperature = {0.2, 1.0},
+	.humidity = {0, 0},
+
+	.scale = 0.015,
+	.height = 32,
+	.min_height = 85,
+	.noisiness = 1,
+
+	.get_block = biome_desert_plains_get_block
+};
+
+Biome	BIOME_DESERT_HIGHLANDS = {
+	.continentalness = {0.3, 0.7},
+	.erosion = {-1, 0.4},
+	.riverness = {0, 0},
+
+	.temperature = {0.2, 1},
+	.humidity = {0, 0},
+
+	.scale = 0.025,
+	.height = 4,
+	.min_height = 60,
+	.noisiness = 1,
+
+	.get_block = biome_mesa_mountains_get_block,
 };
 
 std::vector<Biome>	ALL_BIOMES = {
@@ -180,6 +309,10 @@ std::vector<Biome>	ALL_BIOMES = {
 	BIOME_PLAINS,
 	BIOME_HIGHLANDS,
 	BIOME_MOUNTAINS,
+
+	BIOME_MESA_MOUNTAINS,
+	BIOME_DESERT_PLAINS,
+	BIOME_DESERT_HIGHLANDS,
 };
 
 float distance_to_range(float v, Range r)
@@ -210,6 +343,7 @@ void	Chunk::generate(/*Generator *gen*/)
 
 			float	continentalness = noise(Vec2f(wp.x, wp.z), 0.0025, 1, 5);
 			float	erosion = noise(Vec2f(wp.x, wp.z), 0.0075, 1, 3);
+			float	temperature = noise(Vec2f(wp.x, wp.z), 0.0015, 1, 3);
 
 			std::vector<std::pair<float, Biome*>>	biome_weights;
 			for (auto &biome : ALL_BIOMES)
@@ -218,6 +352,7 @@ void	Chunk::generate(/*Generator *gen*/)
 
 				weight += distance_to_range(continentalness, biome.continentalness);
 				weight += distance_to_range(erosion, biome.erosion);
+				weight += distance_to_range(temperature, biome.temperature);
 
 				biome_weights.push_back(std::make_pair(weight, &biome));
 			}
@@ -265,14 +400,7 @@ void	Chunk::generate(/*Generator *gen*/)
 				int	y = height_map[pos.x + pos.z * CHUNK_SIZE];
 
 				if (wp.y <= y)
-				{
-					if (wp.y == y) // Surface block
-						setBlock(pos, biome_map[pos.x + pos.z * CHUNK_SIZE]->top_block);
-					else if (wp.y == y - 1) // Sub-Surface block
-						setBlock(pos, BLOCK_DIRT);
-					else // Underground block
-						setBlock(pos, BLOCK_STONE);
-				}
+					setBlock(pos, biome_map[pos.x + pos.z * CHUNK_SIZE]->get_block(wp, y));
 				else if (wp.y < 60)
 					setBlock(pos, BLOCK_WATER);
 				else
