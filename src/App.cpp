@@ -62,7 +62,7 @@ void	App::_loop(void)
 	float	fog_power = 4;
 	bool	fog_toggle = true;
 	Vec3f	sky_color(194 / 255.0, 235.0 / 255.0, 1.0);
-	Vec3f	render_distance = Vec3f(4);
+	Vec3f	render_distance = Vec3f(8);
 	Vec3f	fog_distance = render_distance * CHUNK_SIZE + CHUNK_SIZE;
 
 	while (_window.is_open())

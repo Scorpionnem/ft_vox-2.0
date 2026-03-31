@@ -130,6 +130,7 @@ class	Chunk
 		uint64_t						_mesh_size = 0;
 		uint16_t						_non_air_blocks = 0;
 		std::vector<Vertex>				_mesh;
+		std::vector<Vertex>				_transparent_mesh;
 
 		World							*_world;
 

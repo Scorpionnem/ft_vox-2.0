@@ -23,6 +23,7 @@ constexpr const Vec3i	DIR_OFFSET[6] =
 #define BLOCK_SAND 18
 #define BLOCK_DIRT 2
 #define BLOCK_AIR 0
+#define BLOCK_WATER 223
 
 float smoothstep(float edge0, float edge1, float x)
 {
@@ -38,10 +39,6 @@ struct	Range
 		this->max = max;
 	}
 
-	bool	fit(float v)
-	{
-		return (v >= min && v <= max);
-	}
 	float	min;
 	float	max;
 };
@@ -49,7 +46,7 @@ struct	Range
 struct	Biome
 {
 	Range	continentalness;
-	Range	mountainess;
+	Range	erosion;
 	Range	riverness;
 
 	Range	temperature;
@@ -58,76 +55,141 @@ struct	Biome
 	float	scale;
 	int		height;
 	int		min_height;
+	int		noisiness;
 
 	int		top_block;
 };
 
+Biome	BIOME_DEEP_OCEAN = {
+	.continentalness = {-1.0, -0.4},
+	.erosion = {0.1, 1},
+	.riverness = {0, 0},
+
+	.temperature = {0, 0},
+	.humidity = {0, 0},
+
+	.scale = 0.025,
+	.height = 3,
+	.min_height = 0,
+	.noisiness = 1,
+
+	.top_block = BLOCK_STONE
+};
+
 Biome	BIOME_OCEAN = {
-	.continentalness = {-1, -0.2},
-	.mountainess = {0, 1},
-	.riverness = {0, 1},
+	.continentalness = {-0.4, 0.0},
+	.erosion = {-1, 1},
+	.riverness = {0, 0},
 
-	.temperature = {0, 1},
-	.humidity = {0, 1},
+	.temperature = {0, 0},
+	.humidity = {0, 0},
 
-	.scale = 0.05,
+	.scale = 0.06,
 	.height = 8,
-	.min_height = 50,
+	.min_height = 30,
+	.noisiness = 1,
 
 	.top_block = BLOCK_GRAVEL
 };
 
 Biome	BIOME_SHALLOW_OCEAN = {
-	.continentalness = {-0.2, 0.0},
-	.mountainess = {0, 1},
-	.riverness = {0, 1},
+	.continentalness = {-0.4, 0.15},
+	.erosion = {0.3, 1},
+	.riverness = {0, 0},
 
-	.temperature = {0, 1},
-	.humidity = {0, 1},
+	.temperature = {0, 0},
+	.humidity = {0, 0},
 
 	.scale = 0.015,
-	.height = 8,
-	.min_height = 56,
+	.height = 5,
+	.min_height = 54,
+	.noisiness = 1,
+
+	.top_block = BLOCK_SANDSTONE,
+};
+
+Biome	BIOME_BEACHES = {
+	.continentalness = {0, 0.1},
+	.erosion = {-0.2, 0.2},
+	.riverness = {0, 0},
+
+	.temperature = {0, 0},
+	.humidity = {0, 0},
+
+	.scale = 0.015,
+	.height = 16,
+	.min_height = 70,
+	.noisiness = 1,
 
 	.top_block = BLOCK_SAND,
 };
 
 Biome	BIOME_PLAINS = {
-	.continentalness = {0.0, 0.4},
-	.mountainess = {0, 1},
-	.riverness = {0, 1},
+	.continentalness = {0.2, 0.7},
+	.erosion = {0.0, 1},
+	.riverness = {0, 0},
 
-	.temperature = {0, 1},
-	.humidity = {0, 1},
+	.temperature = {0, 0},
+	.humidity = {0, 0},
 
 	.scale = 0.015,
 	.height = 32,
-	.min_height = 70,
+	.min_height = 85,
+	.noisiness = 1,
+
+	.top_block = BLOCK_GRASS,
+};
+
+Biome	BIOME_HIGHLANDS = {
+	.continentalness = {0.4, 0.7},
+	.erosion = {-1, 0.4},
+	.riverness = {0, 0},
+
+	.temperature = {0, 0},
+	.humidity = {0, 0},
+
+	.scale = 0.025,
+	.height = 48,
+	.min_height = 100,
+	.noisiness = 1,
 
 	.top_block = BLOCK_GRASS,
 };
 
 Biome	BIOME_MOUNTAINS = {
-	.continentalness = {0.4, 1},
-	.mountainess = {0, 1},
-	.riverness = {0, 1},
+	.continentalness = {0.37, 1},
+	.erosion = {-1, -0.0},
+	.riverness = {0, 0},
 
-	.temperature = {0, 1},
-	.humidity = {0, 1},
+	.temperature = {0, 0},
+	.humidity = {0, 0},
 
 	.scale = 0.010,
 	.height = 128,
-	.min_height = 80,
+	.min_height = 120,
+	.noisiness = 5,
 
 	.top_block = BLOCK_STONE
 };
 
 std::vector<Biome>	ALL_BIOMES = {
+	BIOME_DEEP_OCEAN,
 	BIOME_OCEAN,
 	BIOME_SHALLOW_OCEAN,
+	BIOME_BEACHES,
 	BIOME_PLAINS,
+	BIOME_HIGHLANDS,
 	BIOME_MOUNTAINS,
 };
+
+float distance_to_range(float v, Range r)
+{
+	if (v < r.min)
+		return (r.min - v);
+	if (v > r.max)
+		return (v - r.max);
+	return (0.0f);
+}
 
 void	Chunk::generate(/*Generator *gen*/)
 {
@@ -146,49 +208,50 @@ void	Chunk::generate(/*Generator *gen*/)
 		{
 			WorldVec3i	wp = pos + (_pos * CHUNK_SIZE);
 
-			float	continentalness = noise(Vec2f(wp.x, wp.z), 0.005, 1, 4);
+			float	continentalness = noise(Vec2f(wp.x, wp.z), 0.0025, 1, 5);
+			float	erosion = noise(Vec2f(wp.x, wp.z), 0.0075, 1, 3);
 
-			/*
-				Compute each biome noise value (continent, mountain, temperature, humidity, river...)
-
-				then compute each biome heightmap for biomes that are over the treshold (dont compute heightmap for all possible biomes)
-
-				then do the blend and smoothing for all biomes we have
-			*/
-
-			std::vector<float>	biome_weights;
-			std::vector<int>	biome_heights;
-
-			float	biggest_weight = 0;
-
+			std::vector<std::pair<float, Biome*>>	biome_weights;
 			for (auto &biome : ALL_BIOMES)
 			{
-				float	weight = 1;
-				float	height = perlin(Vec2f(wp.x, wp.z) * biome.scale) * biome.height + biome.min_height;
+				float	weight = 0;
 
-				float	continentalness_blend = 0.2;
-				weight = smoothstep(biome.continentalness.min, biome.continentalness.max, continentalness)
-						* (1.0 - smoothstep(biome.continentalness.min, biome.continentalness.max + continentalness_blend, continentalness));
+				weight += distance_to_range(continentalness, biome.continentalness);
+				weight += distance_to_range(erosion, biome.erosion);
 
-				biome_weights.push_back(weight);
-				biome_heights.push_back(height);
-
-				if (weight > biggest_weight)
-				{
-					biggest_weight = weight;
-					biome_map[pos.x + pos.z * CHUNK_SIZE] = &biome;
-				}
+				biome_weights.push_back(std::make_pair(weight, &biome));
 			}
 
+			float sharpness = 32.0f;
+			for (auto &[w, b] : biome_weights)
+				w = exp(-w * sharpness);
+
 			float total = 0.0f;
-			for (float w : biome_weights)
+			for (auto [w, b] : biome_weights)
 				total += w;
-			for (float &w : biome_weights)
+			for (auto &[w, b] : biome_weights)
 				w /= total;
+
+			float	biggest_weight = 0;
+			biome_map[pos.x + pos.z * CHUNK_SIZE] = &BIOME_PLAINS;
 
 			float height = 0.0f;
 			for (uint64_t i = 0; i < biome_weights.size(); i++)
-				height += biome_heights[i] * biome_weights[i];
+			{
+				if (biome_weights[i].first > 0.01)
+				{
+					Biome	*biome = biome_weights[i].second;
+					float	biome_height = noise(Vec2f(wp.x, wp.z), biome->scale, 1, biome->noisiness) * biome->height + biome->min_height;
+
+					height += biome_height * biome_weights[i].first;
+				}
+
+				if (biome_weights[i].first > biggest_weight)
+				{
+					biggest_weight = biome_weights[i].first;
+					biome_map[pos.x + pos.z * CHUNK_SIZE] = biome_weights[i].second;
+				}
+			}
 
 			height_map[pos.x + pos.z * CHUNK_SIZE] = height;
 		}
@@ -210,6 +273,8 @@ void	Chunk::generate(/*Generator *gen*/)
 					else // Underground block
 						setBlock(pos, BLOCK_STONE);
 				}
+				else if (wp.y < 60)
+					setBlock(pos, BLOCK_WATER);
 				else
 					setBlock(pos, BLOCK_AIR);
 			}
@@ -241,6 +306,8 @@ void	Chunk::upload()
 
 	glBindVertexArray(VAO);
 
+	_mesh.insert(_mesh.end(), _transparent_mesh.begin(), _transparent_mesh.end());
+
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, _mesh.size() * sizeof(Vertex), _mesh.data(), GL_STATIC_DRAW);
 
@@ -261,6 +328,7 @@ void	Chunk::upload()
 	_state = Chunk::State::UPLOADED;
 	_mesh_size = _mesh.size();
 	_mesh.clear();
+	_transparent_mesh.clear();
 
 	_chunkMutex.unlock();
 }
@@ -410,7 +478,7 @@ void	Chunk::mesh()
 						else if (neighbours[dir]->_isInBounds(neighbourChunkPos))
 							cull_block = neighbours[dir]->getBlock(neighbourChunkPos);
 
-						if (cull_block == 0 && cull_block != block)
+						if ((cull_block == 0 || cull_block == BLOCK_WATER) && cull_block != block)
 						{
 							Face	f1 = FACE1[dir];
 							Face	f2 = FACE2[dir];
@@ -440,12 +508,24 @@ void	Chunk::mesh()
 							f2.v1.uv = getAtlasUV(f2.v1.uv, atlasId);
 							f2.v2.uv = getAtlasUV(f2.v2.uv, atlasId);
 							f2.v3.uv = getAtlasUV(f2.v3.uv, atlasId);
-							_mesh.push_back(f1.v1);
-							_mesh.push_back(f1.v2);
-							_mesh.push_back(f1.v3);
-							_mesh.push_back(f2.v1);
-							_mesh.push_back(f2.v2);
-							_mesh.push_back(f2.v3);
+							if (block == BLOCK_WATER)
+							{
+								_transparent_mesh.push_back(f1.v1);
+								_transparent_mesh.push_back(f1.v2);
+								_transparent_mesh.push_back(f1.v3);
+								_transparent_mesh.push_back(f2.v1);
+								_transparent_mesh.push_back(f2.v2);
+								_transparent_mesh.push_back(f2.v3);
+							}
+							else
+							{
+								_mesh.push_back(f1.v1);
+								_mesh.push_back(f1.v2);
+								_mesh.push_back(f1.v3);
+								_mesh.push_back(f2.v1);
+								_mesh.push_back(f2.v2);
+								_mesh.push_back(f2.v3);
+							}
 						}
 					}
 				}
