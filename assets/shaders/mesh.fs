@@ -29,7 +29,7 @@ void main()
 	color.rgb *= vColor;
 
 	float shadowForce = dot(vNormal, vec3(1, 1, 0.5));
-	shadowForce = clamp(shadowForce, 0.2, 1.0);
+	shadowForce = clamp(shadowForce, 0.4, 1.0);
 	color.rgb *= shadowForce;
 
 	if (FOG_TOGGLE == true)
