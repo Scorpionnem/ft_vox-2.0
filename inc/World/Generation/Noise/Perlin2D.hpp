@@ -3,29 +3,29 @@
 #include "Math.hpp"
 #include "White.hpp"
 
-float lerp(float x, float y, float a)
+inline float lerp(float x, float y, float a)
 {
 	return (x * (1 - a) + y * a);
 }
 
-float easeIn(float interpolator)
+inline float easeIn(float interpolator)
 {
 	return (interpolator * interpolator);
 }
 
-float easeOut(float interpolator)
+inline float easeOut(float interpolator)
 {
 	return (1 - easeIn(1 - interpolator));
 }
 
-float easeInOut(float interpolator)
+inline float easeInOut(float interpolator)
 {
 	float	easeInValue = easeIn(interpolator);
 	float	easeOutValue = easeOut(interpolator);
 	return (lerp(easeInValue, easeOutValue, interpolator));
 }
 
-float perlin(Vec2f value)
+inline float perlin(Vec2f value)
 {
 	Vec2f	lowerLeftDirection = rand2dTo2d(Vec2f(floor(value.x), floor(value.y))) * 2 - 1;
 	Vec2f	lowerRightDirection = rand2dTo2d(Vec2f(ceil(value.x), floor(value.y))) * 2 - 1;
@@ -49,7 +49,7 @@ float perlin(Vec2f value)
 	return (noise);
 }
 
-float	noise(const Vec2f &pos, float freq, float amp, int noisiness)
+inline float	noise(const Vec2f &pos, float freq, float amp, int noisiness)
 {
 	float	res = 0;
 	for (int i = 0; i < noisiness; i++)

@@ -16,21 +16,10 @@
 #include "BlockType.hpp"
 #include "Face.hpp"
 
-/* Position in chunk local space (0-CHUNK_SIZE) */
-using ChunkLocalVec3i	= 	Vec3i;
-/* Position in chunk world space */
-using ChunkWorldVec3i	= 	Vec3i;
-/* Position in world space */
-using WorldVec3i		= 	Vec3i;
-
 #define CHUNK_SIZE			32
 #define CHUNK_VOLUME		CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
 
 #define SPAWN_FADE_TIME		0.3
-
-/* DONT forget to implement local block state table when implementing blockstates */
-using ChunkBlockStateId = 	uint16_t;
-using BlockStateId = 		uint32_t;
 
 class	World;
 

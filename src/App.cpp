@@ -3,6 +3,7 @@
 #include "Texture.hpp"
 #include "Camera.hpp"
 #include "World.hpp"
+#include "Biome.hpp"
 
 #include <stdexcept>
 #include <iostream>
@@ -38,25 +39,14 @@ void	updateCamera(Camera &cam, const Window::Events &events)
 	cam.update(events.getDeltaTime(), events.getAspectRatio());
 }
 
+extern std::vector<std::shared_ptr<Biome>>	ALL_BIOMES;
+
 void	App::_loop(void)
 {
 	Camera	cam;
 
-	World	world;
-
 	ThreadPool	genThreads;
 	genThreads.add(8);
-
-	Shader	shader;
-	shader.load(GL_VERTEX_SHADER, "assets/shaders/mesh.vs");
-	shader.load(GL_FRAGMENT_SHADER, "assets/shaders/mesh.fs");
-	shader.link();
-
-	shader.setInt("atlas", 0);
-
-	Texture	texture;
-	texture.load("assets/textures/atlas.png");
-	texture.upload();
 
 	bool	showDebug = false;
 	float	fog_power = 4;
@@ -76,24 +66,24 @@ void	App::_loop(void)
 
 		updateCamera(cam, events);
 
-		world.setUpdateCenter(cam.pos);
-		world.update(genThreads, events.getDeltaTime());
+		_world.setUpdateCenter(cam.pos);
+		_world.update(genThreads, events.getDeltaTime());
 
-		auto	view = world.getVision(cam, render_distance);
+		auto	view = _world.getVision(cam, render_distance);
 
-		texture.bind(0);
+		_atlas.bind(0);
 
-		shader.use();
-		shader.setMat4f("view", cam.getViewMatrix());
-		shader.setMat4f("proj", perspective<float>(90, events.getAspectRatio(), 0.1, 1000.0));
+		_terrain_shader.use();
+		_terrain_shader.setMat4f("view", cam.getViewMatrix());
+		_terrain_shader.setMat4f("proj", perspective<float>(90, events.getAspectRatio(), 0.1, 1000.0));
 
-		shader.setVec3f("RENDER_DISTANCE", render_distance * CHUNK_SIZE);
-		shader.setVec3f("VIEW_POS", cam.pos);
-		shader.setFloat("FOG_POWER", fog_power);
-		shader.setVec3f("FOG_COLOR", sky_color);
-		shader.setBool("FOG_TOGGLE", fog_toggle);
-		shader.setInt("CHUNK_SIZE", CHUNK_SIZE);
-		shader.setVec3f("FOG_DISTANCE", fog_distance);
+		_terrain_shader.setVec3f("RENDER_DISTANCE", render_distance * CHUNK_SIZE);
+		_terrain_shader.setVec3f("VIEW_POS", cam.pos);
+		_terrain_shader.setFloat("FOG_POWER", fog_power);
+		_terrain_shader.setVec3f("FOG_COLOR", sky_color);
+		_terrain_shader.setBool("FOG_TOGGLE", fog_toggle);
+		_terrain_shader.setInt("CHUNK_SIZE", CHUNK_SIZE);
+		_terrain_shader.setVec3f("FOG_DISTANCE", fog_distance);
 
 		glClearColor(sky_color.x, sky_color.y, sky_color.z, 1.0);
 
@@ -101,14 +91,14 @@ void	App::_loop(void)
 		{
 			if (chunk->state() < Chunk::State::UPLOADED)
 				chunk->upload();
-			chunk->draw(shader);
+			chunk->draw(_terrain_shader);
 		}
 
 		if (events.getKeyPressed(SDLK_F3))
 			showDebug = !showDebug;
 		if (showDebug)
 		{
-			world.imgui();
+			_world.imgui();
 			cam.imgui();
 			genThreads.imgui();
 			if (ImGui::Begin("ft_vox"))
@@ -127,9 +117,35 @@ void	App::_loop(void)
 	}
 }
 
+#include "PlainsBiome.hpp"
+#include "MountainPeaksBiome.hpp"
+#include "MountainLowBiome.hpp"
+#include "ForestBiome.hpp"
+#include "BeachBiome.hpp"
+#include "ShallowOceanBiome.hpp"
+#include "OceanBiome.hpp"
+#include "DeepOceanBiome.hpp"
+
 void	App::_init()
 {
 	_window.open("ft_vox", 1024, 768);
+
+	_atlas.load("assets/textures/atlas.png");
+	_atlas.upload();
+
+	_terrain_shader.load(GL_VERTEX_SHADER, "assets/shaders/mesh.vs");
+	_terrain_shader.load(GL_FRAGMENT_SHADER, "assets/shaders/mesh.fs");
+	_terrain_shader.link();
+	_terrain_shader.setInt("atlas", 0);
+
+	ALL_BIOMES.push_back(std::make_shared<PlainsBiome>());
+	ALL_BIOMES.push_back(std::make_shared<MountainPeaksBiome>());
+	ALL_BIOMES.push_back(std::make_shared<MountainLowBiome>());
+	ALL_BIOMES.push_back(std::make_shared<ForestBiome>());
+	ALL_BIOMES.push_back(std::make_shared<BeachBiome>());
+	ALL_BIOMES.push_back(std::make_shared<ShallowOceanBiome>());
+	ALL_BIOMES.push_back(std::make_shared<OceanBiome>());
+	ALL_BIOMES.push_back(std::make_shared<DeepOceanBiome>());
 }
 
 void	App::run(void)

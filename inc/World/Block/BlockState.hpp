@@ -5,6 +5,32 @@
 
 using BlockStateId = uint32_t;
 using BlockStateHash = uint32_t;
+/* DONT forget to implement local block state table when implementing blockstates */
+using ChunkBlockStateId = 	uint16_t;
+
+#define BLOCK_TERRACOTA 221
+#define BLOCK_BLACK_TERRACOTA 220
+#define BLOCK_BROWN_TERRACOTA 219
+#define BLOCK_ORANGE_TERRACOTA 218
+#define BLOCK_RED_TERRACOTA 217
+#define BLOCK_GRAY_TERRACOTA 233
+#define BLOCK_WHITE_TERRACOTA 234
+#define BLOCK_YELLOW_TERRACOTA 235
+
+#define BLOCK_COBBLESTONE 16
+#define BLOCK_SANDSTONE 208
+#define BLOCK_BEDROCK 17
+#define BLOCK_GRAVEL 19
+#define BLOCK_GRASS 40
+#define BLOCK_SNOW 66
+#define BLOCK_STONE 1
+#define BLOCK_SAND 18
+#define BLOCK_DIRT 2
+#define BLOCK_AIR 0
+#define BLOCK_WATER 223
+#define BLOCK_ICE 67
+
+#define WATER_LEVEL 60
 
 class	BlockType;
 
