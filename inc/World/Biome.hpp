@@ -64,7 +64,7 @@ struct	Biome
 		final_height = 0.0f;
 		for (uint64_t i = 0; i < biome_weights.size(); i++)
 		{
-			if (biome_weights[i].first > 0.005)
+			if (biome_weights[i].first > 0.001)
 			{
 				std::shared_ptr<Biome>	biome = biome_weights[i].second;
 				float	biome_height = biome->get_height(Vec2i(pos.x, pos.y));
