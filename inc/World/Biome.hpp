@@ -15,7 +15,7 @@ struct	Biome
 	{
 
 	}
-	~Biome() {}
+	virtual ~Biome() {}
 
 	Range	continentalness;
 	Range	erosion;

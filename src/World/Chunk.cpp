@@ -286,8 +286,6 @@ void	Chunk::mesh()
 			neighbours[dir] = chunk;
 	}
 
-	ChunkLocalVec3i	pos;
-
 	ChunkLocalVec3i	blockPos;
 	for (blockPos.x = 0; blockPos.x < CHUNK_SIZE; blockPos.x++)
 		for (blockPos.y = 0; blockPos.y < CHUNK_SIZE; blockPos.y++)
