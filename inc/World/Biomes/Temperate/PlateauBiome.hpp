@@ -2,20 +2,20 @@
 
 #include "Biome.hpp"
 
-struct	MountainPeaksBiome : public Biome
+struct	PlateauBiome : public Biome
 {
-	MountainPeaksBiome()
-	: Biome(Range(0.55, 1), Range(0, 0), Range(0, 0), Range(0, 0), Range(0, 0))
+	PlateauBiome()
+	: Biome(Range(0.7, 0.85), Range(0, 1), Range(0, 0), Range(-1, 0.33), Range(0, 0))
 	{
 
 	}
 
 	float			get_height(const Vec2i &pos)
 	{
-		float	scale = 0.008;
-		int		height = 360;
+		float	scale = 0.0078;
+		int		height = 8;
 		int		min_height = 120;
-		int		noisiness = 4;
+		int		noisiness = 3;
 
 		return (std::fabs(noise(Vec2f(pos.x, pos.y), scale, 1, noisiness)) * height + min_height);
 	}
@@ -25,11 +25,10 @@ struct	MountainPeaksBiome : public Biome
 
 		if (pos.y <= WATER_LEVEL && pos.y > world_height)
 			return (BLOCK_WATER);
-		int	var = static_cast<int>(rand2dTo1d(Vec2i(pos.x, pos.z)) * 8);
-		if (pos.y >= SNOW_HEIGHT - (var + 1))
-			return (BLOCK_SNOW);
+		if (pos.y > world_height)
+			return (BLOCK_AIR);
 		if (pos.y == world_height)
-			return (BLOCK_STONE);
+			return (BLOCK_GRASS);
 		return (BLOCK_STONE);
 	}
 };

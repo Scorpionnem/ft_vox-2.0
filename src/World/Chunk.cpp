@@ -57,10 +57,10 @@ void	Chunk::generate(/*Generator *gen*/)
 
 				int	y = height_map[pos.x + pos.z * CHUNK_SIZE];
 
-				if (wp.y <= y || wp.y <= WATER_LEVEL)
-					setBlock(pos, biome_map[pos.x + pos.z * CHUNK_SIZE]->get_block(wp, y));
+				if (!biome_map[pos.x + pos.z * CHUNK_SIZE])
+					setBlock(pos, BLOCK_BEDROCK);
 				else
-					setBlock(pos, BLOCK_AIR);
+					setBlock(pos, biome_map[pos.x + pos.z * CHUNK_SIZE]->get_block(wp, y));
 			}
 
 	_state = Chunk::State::GENERATED;
@@ -200,6 +200,57 @@ constexpr const Face	FACE2[6] =
 	),
 };
 
+constexpr const Face GRASS_FACES[8] =
+{
+	// (\) front
+	Face(
+		Vertex(Vec3f(0, 0, 0), Vec3f(0,1,0), UV00),
+		Vertex(Vec3f(1, 0, 1), Vec3f(0,1,0), UV10),
+		Vertex(Vec3f(1, 1, 1), Vec3f(0,1,0), UV11)
+	),
+	Face(
+		Vertex(Vec3f(0, 0, 0), Vec3f(0,1,0), UV00),
+		Vertex(Vec3f(1, 1, 1), Vec3f(0,1,0), UV11),
+		Vertex(Vec3f(0, 1, 0), Vec3f(0,1,0), UV01)
+	),
+
+	// (\) back
+	Face(
+		Vertex(Vec3f(1, 1, 1), Vec3f(0,1,0), UV11),
+		Vertex(Vec3f(1, 0, 1), Vec3f(0,1,0), UV10),
+		Vertex(Vec3f(0, 0, 0), Vec3f(0,1,0), UV00)
+	),
+	Face(
+		Vertex(Vec3f(0, 1, 0), Vec3f(0,1,0), UV01),
+		Vertex(Vec3f(1, 1, 1), Vec3f(0,1,0), UV11),
+		Vertex(Vec3f(0, 0, 0), Vec3f(0,1,0), UV00)
+	),
+
+	// (/) front
+	Face(
+		Vertex(Vec3f(0, 0, 1), Vec3f(0,1,0), UV00),
+		Vertex(Vec3f(1, 0, 0), Vec3f(0,1,0), UV10),
+		Vertex(Vec3f(1, 1, 0), Vec3f(0,1,0), UV11)
+	),
+	Face(
+		Vertex(Vec3f(0, 0, 1), Vec3f(0,1,0), UV00),
+		Vertex(Vec3f(1, 1, 0), Vec3f(0,1,0), UV11),
+		Vertex(Vec3f(0, 1, 1), Vec3f(0,1,0), UV01)
+	),
+
+	// (/) back
+	Face(
+		Vertex(Vec3f(1, 1, 0), Vec3f(0,1,0), UV11),
+		Vertex(Vec3f(1, 0, 0), Vec3f(0,1,0), UV10),
+		Vertex(Vec3f(0, 0, 1), Vec3f(0,1,0), UV00)
+	),
+	Face(
+		Vertex(Vec3f(0, 1, 1), Vec3f(0,1,0), UV01),
+		Vertex(Vec3f(1, 1, 0), Vec3f(0,1,0), UV11),
+		Vertex(Vec3f(0, 0, 1), Vec3f(0,1,0), UV00)
+	),
+};
+
 #define TEX_SIZE 16
 #define ATLAS_SIZE 256
 static Vec2f	getAtlasUV(Vec2f uv, int textureId)
@@ -247,8 +298,36 @@ void	Chunk::mesh()
 
 				BlockStateId	block = getBlock(blockPos);
 
-				if (block != 0)
+				if (block != BLOCK_AIR)
 				{
+					if (block == BLOCK_TALL_GRASS || block == BLOCK_DEAD_BUSH || block == BLOCK_ROSE || block == BLOCK_DANDELION)
+					{
+						for (auto face : GRASS_FACES)
+						{
+							face.v1.pos = blockPos + face.v1.pos;
+							face.v2.pos = blockPos + face.v2.pos;
+							face.v3.pos = blockPos + face.v3.pos;
+
+							face.v1.uv = getAtlasUV(face.v1.uv, block);
+							face.v2.uv = getAtlasUV(face.v2.uv, block);
+							face.v3.uv = getAtlasUV(face.v3.uv, block);
+
+							Vec3f	color(1);
+
+							if (block == BLOCK_TALL_GRASS) // Is grass / leaves and all
+								color = Vec3f(0.05, 0.55, 0.05);
+
+							face.v1.color = color;
+							face.v2.color = color;
+							face.v3.color = color;
+
+							_mesh.push_back(face.v1);
+							_mesh.push_back(face.v2);
+							_mesh.push_back(face.v3);
+						}
+						continue ;
+					}
+
 					for (int dir = 0; dir < 6; dir++)
 					{
 						BlockStateId	cull_block = 0;
@@ -264,7 +343,7 @@ void	Chunk::mesh()
 						else if (neighbours[dir]->_isInBounds(neighbourChunkPos))
 							cull_block = neighbours[dir]->getBlock(neighbourChunkPos);
 
-						if ((cull_block == 0 || cull_block == BLOCK_WATER || cull_block == BLOCK_ICE) && cull_block != block)
+						if ((cull_block == BLOCK_AIR || cull_block == BLOCK_WATER || cull_block == BLOCK_ICE || cull_block == BLOCK_TALL_GRASS || cull_block == BLOCK_DEAD_BUSH || cull_block == BLOCK_ROSE || cull_block == BLOCK_DANDELION) && cull_block != block)
 						{
 							Face	f1 = FACE1[dir];
 							Face	f2 = FACE2[dir];
@@ -278,7 +357,7 @@ void	Chunk::mesh()
 							int		atlasId = block;
 
 							Vec3f	random_color = 1;
-							if (block == 40) // Is grass / leaves and all
+							if (block == BLOCK_GRASS) // Is grass / leaves and all
 								random_color = Vec3f(0.05, 0.55, 0.05);
 
 							f2.v1.color = Vec3f(random_color);

@@ -26,6 +26,9 @@ void main()
 {
 	vec4	color = texture(atlas, vUv);
 
+	if (color.a == 0)
+		discard ;
+
 	color.rgb *= vColor;
 
 	float shadowForce = dot(vNormal, vec3(1, 1, 0.5));

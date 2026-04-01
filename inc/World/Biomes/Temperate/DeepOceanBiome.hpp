@@ -5,7 +5,7 @@
 struct	DeepOceanBiome : public Biome
 {
 	DeepOceanBiome()
-	: Biome(Range(-1, -0.35), Range(0, 0), Range(0, 0), Range(0, 0), Range(0, 0))
+	: Biome(Range(-1, -0.7), Range(-1, 0), Range(0, 0), Range(-1, 1), Range(0, 0))
 	{
 
 	}
@@ -23,6 +23,8 @@ struct	DeepOceanBiome : public Biome
 	{
 		if (pos.y <= WATER_LEVEL && pos.y > world_height)
 			return (BLOCK_WATER);
+		if (pos.y > world_height)
+			return (BLOCK_AIR);
 		if (pos.y == world_height)
 			return (BLOCK_GRAVEL);
 		int	var = static_cast<int>(rand2dTo1d(Vec2i(pos.x, pos.z)) * 3);

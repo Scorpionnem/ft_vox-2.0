@@ -29,13 +29,26 @@ struct	Biome
 	// Returns block at pos with biome parameters
 	virtual BlockStateId	get_block(WorldVec3i pos, int world_height) = 0;
 
+	static float	get_continentalness(const Vec2f &pos)
+	{
+		return (noise(pos, 0.00125, 2, 6));
+	}
+	static float	get_erosion(const Vec2f &pos)
+	{
+		return (noise(pos, 0.00635, 2, 3));
+	}
+	static float	get_temperature(const Vec2f &pos)
+	{
+		return (noise(pos, 0.0015, 2, 3));
+	}
+
 	static void	get_biome(const Vec2i &pos, std::shared_ptr<Biome> &dominant_biome, float &final_height)
 	{
 		extern std::vector<std::shared_ptr<Biome>>	ALL_BIOMES;
 
-		float	continentalness = noise(Vec2f(pos.x, pos.y), 0.00125, 1, 6);
-		float	erosion = noise(Vec2f(pos.x, pos.y), 0.0075, 1, 3);
-		float	temperature = noise(Vec2f(pos.x, pos.y), 0.0015, 1, 3);
+		float	continentalness = get_continentalness(Vec2f(pos.x, pos.y));
+		float	erosion = get_erosion(Vec2f(pos.x, pos.y));
+		float	temperature = get_temperature(Vec2f(pos.x, pos.y));
 
 		std::vector<std::pair<float, std::shared_ptr<Biome>>>	biome_weights;
 		for (auto &biome : ALL_BIOMES)

@@ -2,20 +2,20 @@
 
 #include "Biome.hpp"
 
-struct	OceanBiome : public Biome
+struct	PlainsBiome : public Biome
 {
-	OceanBiome()
-	: Biome(Range(-0.35, -0.1), Range(0, 0), Range(0, 0), Range(0, 0), Range(0, 0))
+	PlainsBiome()
+	: Biome(Range(0.1, 0.7), Range(0, 1), Range(0, 0), Range(-1, 0.33), Range(0, 0))
 	{
 
 	}
 
 	float			get_height(const Vec2i &pos)
 	{
-		float	scale = 0.0155;
-		int		height = 8;
-		int		min_height = 32;
-		int		noisiness = 2;
+		float	scale = 0.02;
+		int		height = 20;
+		int		min_height = 85;
+		int		noisiness = 1;
 
 		return (noise(Vec2f(pos.x, pos.y), scale, 1, noisiness) * height + min_height);
 	}
@@ -23,11 +23,15 @@ struct	OceanBiome : public Biome
 	{
 		if (pos.y <= WATER_LEVEL && pos.y > world_height)
 			return (BLOCK_WATER);
+		if (pos.y == world_height + 1 && rand2dTo1d(Vec2f(pos.x, pos.z)) > 0.7)
+			return (BLOCK_TALL_GRASS);
+		if (pos.y > world_height)
+			return (BLOCK_AIR);
 		if (pos.y == world_height)
-			return (BLOCK_SAND);
+			return (BLOCK_GRASS);
 		int	var = static_cast<int>(rand2dTo1d(Vec2i(pos.x, pos.z)) * 3);
 		if (pos.y >= world_height - (var + 1))
-			return (BLOCK_SANDSTONE);
+			return (BLOCK_DIRT);
 		return (BLOCK_STONE);
 	}
 };

@@ -5,7 +5,7 @@
 struct	MountainLowBiome : public Biome
 {
 	MountainLowBiome()
-	: Biome(Range(0.5, 0.55), Range(0, 0), Range(0, 0), Range(0, 0), Range(0, 0))
+	: Biome(Range(0.7, 0.8), Range(-1, 0), Range(0, 0), Range(-1, 0.33), Range(0, 0))
 	{
 
 	}
@@ -13,7 +13,7 @@ struct	MountainLowBiome : public Biome
 	float			get_height(const Vec2i &pos)
 	{
 		float	scale = 0.008;
-		int		height = 20;
+		int		height = 64;
 		int		min_height = 120;
 		int		noisiness = 4;
 
@@ -25,6 +25,8 @@ struct	MountainLowBiome : public Biome
 
 		if (pos.y <= WATER_LEVEL && pos.y > world_height)
 			return (BLOCK_WATER);
+		if (pos.y > world_height)
+			return (BLOCK_AIR);
 		int	var = static_cast<int>(rand2dTo1d(Vec2i(pos.x, pos.z)) * 8);
 		if (pos.y >= SNOW_HEIGHT - (var + 1))
 			return (BLOCK_SNOW);

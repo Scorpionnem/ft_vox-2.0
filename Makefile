@@ -2,7 +2,7 @@ NAME :=	ft_vox
 
 
 CXX :=	c++
-CXXFLAGS :=	-g -MP -MMD -Wall -Wextra -Werror -std=c++17 #-fsanitize=address -fno-omit-frame-pointer
+CXXFLAGS :=	-g -MP -MMD -Wall -Wextra -Werror -std=c++17 -O3 #-fsanitize=address -fno-omit-frame-pointer
 LFLAGS := -lSDL2 -lGL
 
 EXTERNAL_DIR := external
@@ -23,6 +23,9 @@ INCLUDE_DIRS :=	external/imgui/\
 				inc/World\
 				inc/World/Block\
 				inc/World/Biomes\
+				inc/World/Biomes/Temperate\
+				inc/World/Biomes/Hot\
+				inc/World/Biomes/Cold\
 				inc/World/Generation/Noise\
 
 
@@ -122,11 +125,13 @@ glad: $(EXTERNAL_DIR)
 $(NAME): $(OBJS)
 	@echo Compiling $(NAME)
 	@$(CXX) $(CXXFLAGS) $(LFLAGS) $(INCLUDE_DIRS) -o $@ $^
+	@echo Compiled $(NAME)
 
 $(OBJ_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
-	@echo Compiling $@
+	@echo Compiling $<
 	@$(CXX) $(CXXFLAGS) $(INCLUDE_DIRS) -c $< -o $@
+	@echo Compiled $@
 
 re: fclean compile
 

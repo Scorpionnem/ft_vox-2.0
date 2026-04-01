@@ -45,6 +45,10 @@ void	App::_loop(void)
 {
 	Camera	cam;
 
+	cam.pos.x = 0;
+	cam.pos.z = 0;
+	cam.pos.y = 130;
+
 	ThreadPool	genThreads;
 	genThreads.add(8);
 
@@ -111,6 +115,15 @@ void	App::_loop(void)
 				ImGui::ColorPicker3("sky color", &sky_color.x);
 			}
 			ImGui::End();
+
+			if (ImGui::Begin("generation"))
+			{
+				Vec2f	p = {cam.pos.x, cam.pos.z};
+				ImGui::Text("C: %.2f", Biome::get_continentalness(p));
+				ImGui::Text("E: %.2f", Biome::get_erosion(p));
+				ImGui::Text("T: %.2f", Biome::get_temperature(p));
+			}
+			ImGui::End();
 		}
 
 		_window.render();
@@ -122,9 +135,16 @@ void	App::_loop(void)
 #include "MountainLowBiome.hpp"
 #include "ForestBiome.hpp"
 #include "BeachBiome.hpp"
+#include "GravelBeachBiome.hpp"
 #include "ShallowOceanBiome.hpp"
 #include "OceanBiome.hpp"
 #include "DeepOceanBiome.hpp"
+#include "PlateauBiome.hpp"
+#include "OldMountainBiome.hpp"
+#include "DesertBiome.hpp"
+#include "MesaBiome.hpp"
+#include "MesaPlateauBiome.hpp"
+#include "MesaTransitionBiome.hpp"
 
 void	App::_init()
 {
@@ -138,14 +158,30 @@ void	App::_init()
 	_terrain_shader.link();
 	_terrain_shader.setInt("atlas", 0);
 
+	ALL_BIOMES.push_back(std::make_shared<DesertBiome>());
+
 	ALL_BIOMES.push_back(std::make_shared<PlainsBiome>());
-	ALL_BIOMES.push_back(std::make_shared<MountainPeaksBiome>());
-	ALL_BIOMES.push_back(std::make_shared<MountainLowBiome>());
 	ALL_BIOMES.push_back(std::make_shared<ForestBiome>());
+
+
 	ALL_BIOMES.push_back(std::make_shared<BeachBiome>());
+	ALL_BIOMES.push_back(std::make_shared<GravelBeachBiome>());
+
+
 	ALL_BIOMES.push_back(std::make_shared<ShallowOceanBiome>());
 	ALL_BIOMES.push_back(std::make_shared<OceanBiome>());
 	ALL_BIOMES.push_back(std::make_shared<DeepOceanBiome>());
+
+
+	ALL_BIOMES.push_back(std::make_shared<MountainLowBiome>());
+	ALL_BIOMES.push_back(std::make_shared<PlateauBiome>());
+	ALL_BIOMES.push_back(std::make_shared<MesaPlateauBiome>());
+	ALL_BIOMES.push_back(std::make_shared<MesaBiome>());
+	ALL_BIOMES.push_back(std::make_shared<MesaTransitionBiome>());
+
+
+	ALL_BIOMES.push_back(std::make_shared<MountainPeaksBiome>());
+	ALL_BIOMES.push_back(std::make_shared<OldMountainBiome>());
 }
 
 void	App::run(void)
