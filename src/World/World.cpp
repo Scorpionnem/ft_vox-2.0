@@ -70,7 +70,7 @@ std::vector<std::shared_ptr<Chunk>>	World::getVision(const Camera &cam, const Ve
 {
 	std::vector<std::shared_ptr<Chunk>>	res;
 
-	ChunkWorldVec3i	viewCenter = cam.pos / CHUNK_SIZE;
+	ChunkWorldVec3i	viewCenter = worldToChunkWorld(cam.pos, CHUNK_SIZE);
 
 	ChunkWorldVec3i	viewStart = viewCenter + viewDistance;
 	ChunkWorldVec3i	viewEnd = viewCenter - viewDistance;

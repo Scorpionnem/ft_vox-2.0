@@ -10,11 +10,13 @@
 #include <sys/stat.h>
 #include <atomic>
 #include <mutex>
+#include <iostream>
 
 #include "Math.hpp"
 #include "Shader.hpp"
 #include "BlockType.hpp"
 #include "Face.hpp"
+#include "Mesh.hpp"
 
 #define CHUNK_SIZE			32
 #define CHUNK_VOLUME		CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
@@ -32,7 +34,6 @@ class	Chunk
 			GENERATED,
 			MESHED,
 			UPLOADED,
-			EDITED,
 		};
 	private:
 		/*
@@ -49,13 +50,30 @@ class	Chunk
 	public:
 		Chunk(const ChunkWorldVec3i &pos, World *world)
 		{
+			_solid_mesh.add_vertex_layout(0, 3, GL_FLOAT, offsetof(Vertex, pos));
+			_solid_mesh.add_vertex_layout(1, 3, GL_FLOAT, offsetof(Vertex, normal));
+			_solid_mesh.add_vertex_layout(2, 3, GL_FLOAT, offsetof(Vertex, color));
+			_solid_mesh.add_vertex_layout(3, 2, GL_FLOAT, offsetof(Vertex, uv));
+			_solid_mesh.set_sizeof_layout(sizeof(Vertex));
+
+			_transparent_mesh.add_vertex_layout(0, 3, GL_FLOAT, offsetof(Vertex, pos));
+			_transparent_mesh.add_vertex_layout(1, 3, GL_FLOAT, offsetof(Vertex, normal));
+			_transparent_mesh.add_vertex_layout(2, 3, GL_FLOAT, offsetof(Vertex, color));
+			_transparent_mesh.add_vertex_layout(3, 2, GL_FLOAT, offsetof(Vertex, uv));
+			_transparent_mesh.set_sizeof_layout(sizeof(Vertex));
+
 			_world = world;
 			_pos = pos;
 		}
 		~Chunk()
 		{
-			glDeleteVertexArrays(1, &VAO);
-			glDeleteBuffers(1, &VBO);
+			if (_edited)
+				save(get_chunk_path(_pos));
+		}
+
+		static std::string	get_chunk_path(const ChunkWorldVec3i &pos)
+		{
+			return ("saves/" + std::to_string(pos.hash()) + ".vck");
 		}
 
 		void	update(double delta)
@@ -69,6 +87,7 @@ class	Chunk
 
 		void	generate(/*Generator *gen*/);
 		void	mesh();
+		void	mesh_neighbours();
 		void	draw(Shader &shader);
 		void	upload();
 
@@ -89,13 +108,9 @@ class	Chunk
 			if (!_isInBounds(pos))
 				throw std::runtime_error("setblock out of bounds");
 
-			ChunkBlockStateId	&b = _blocks[_getBlockIndex(pos)];
+			set_edited();
 
-			if (b == 0 && block != 0)
-				_non_air_blocks++;
-			else if (b != 0 && block == 0)
-				_non_air_blocks--;
-			b = block;
+			_setBlock(pos, block);
 		}
 
 		Chunk::State	state() {return (_state);}
@@ -105,26 +120,39 @@ class	Chunk
 			return (_non_air_blocks != 0);
 		}
 
+		void	set_edited()
+		{
+			_edited = true;
+		}
 		bool	check = true; // TODO Remove ts
 	private:
 		std::mutex						_chunkMutex;
 		std::atomic<Chunk::State>		_state = Chunk::State::NONE;
+		std::atomic_bool				_edited = false;
 
 		ChunkWorldVec3i					_pos;
 		std::vector<ChunkBlockStateId>	_blocks;
 
 		// need to abstract this
-		uint32_t						VAO = 0;
-		uint32_t						VBO = 0;
-		uint64_t						_mesh_size = 0;
 		uint16_t						_non_air_blocks = 0;
-		std::vector<Vertex>				_mesh;
-		std::vector<Vertex>				_transparent_mesh;
+
+		Mesh							_solid_mesh;
+		Mesh							_transparent_mesh;
 
 		World							*_world;
 
 		float							_spawn_fade = 0;
 	private:
+		inline void	_setBlock(const ChunkLocalVec3i &pos, ChunkBlockStateId block)
+		{
+			ChunkBlockStateId	&b = _blocks[_getBlockIndex(pos)];
+
+			if (b == 0 && block != 0)
+				_non_air_blocks++;
+			else if (b != 0 && block == 0)
+				_non_air_blocks--;
+			b = block;
+		}
 		inline bool	_isInBounds(const ChunkLocalVec3i &pos)
 		{
 			return (pos.x >= 0 && pos.y >= 0 && pos.z >= 0 && pos.x < CHUNK_SIZE && pos.y < CHUNK_SIZE && pos.z < CHUNK_SIZE);

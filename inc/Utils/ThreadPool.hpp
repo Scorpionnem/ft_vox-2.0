@@ -25,6 +25,7 @@ class	ThreadPool
 		/* Adds N threads to the pool */
 		void	add(uint64_t n)
 		{
+			_threads_count += n;
 			for (uint32_t i = 0; i < n; ++i)
 				_worker_threads.emplace_back(std::bind(&ThreadPool::_worker, this));
 		}
@@ -80,7 +81,7 @@ class	ThreadPool
 				std::unique_lock<std::mutex> lock(_queue_mutex);
 
 				ImGui::Text("Tasks: %ld", _tasks.size());
-				ImGui::Text("Working Threads: %d", _active_tasks.load());
+				ImGui::Text("Working Threads: %d/%ld", _active_tasks.load(), _threads_count);
 			}
 			ImGui::End();
 		}
@@ -124,4 +125,6 @@ class	ThreadPool
 		std::vector<std::thread>			_worker_threads;
 
 		std::atomic_bool					_stop = false;
+
+		uint64_t							_threads_count = 0;
 };

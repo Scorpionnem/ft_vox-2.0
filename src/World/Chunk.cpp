@@ -25,52 +25,52 @@ std::vector<std::shared_ptr<Biome>>	ALL_BIOMES;
 
 void	Chunk::generate(/*Generator *gen*/)
 {
-	_blocks.resize(CHUNK_VOLUME);
+	if (try_load(get_chunk_path(_pos)))
+		_edited = true;
+	else
+	{
+		_blocks.resize(CHUNK_VOLUME);
 
-	ChunkLocalVec3i	pos;
+		ChunkLocalVec3i	pos;
 
-	std::vector<int>	height_map;
-	std::vector<std::shared_ptr<Biome>>	biome_map;
+		std::vector<int>	height_map;
+		std::vector<std::shared_ptr<Biome>>	biome_map;
 
-	height_map.resize(CHUNK_SIZE * CHUNK_SIZE);
-	biome_map.resize(CHUNK_SIZE * CHUNK_SIZE);
+		height_map.resize(CHUNK_SIZE * CHUNK_SIZE);
+		biome_map.resize(CHUNK_SIZE * CHUNK_SIZE);
 
-	for (pos.x = 0; pos.x < CHUNK_SIZE; pos.x++)
-		for (pos.z = 0; pos.z < CHUNK_SIZE; pos.z++)
-		{
-			WorldVec3i	wp = pos + (_pos * CHUNK_SIZE);
-
-			std::shared_ptr<Biome>	dominant_biome;
-			float					height;
-
-			Biome::get_biome(Vec2i(wp.x, wp.z), dominant_biome, height);
-
-			height_map[pos.x + pos.z * CHUNK_SIZE] = height;
-			biome_map[pos.x + pos.z * CHUNK_SIZE] = dominant_biome;
-		}
-
-	for (pos.x = 0; pos.x < CHUNK_SIZE; pos.x++)
-		for (pos.z = 0; pos.z < CHUNK_SIZE; pos.z++)
-			for (pos.y = 0; pos.y < CHUNK_SIZE; pos.y++)
+		for (pos.x = 0; pos.x < CHUNK_SIZE; pos.x++)
+			for (pos.z = 0; pos.z < CHUNK_SIZE; pos.z++)
 			{
-				WorldVec3i	wp = pos + (_pos * CHUNK_SIZE);
+				WorldVec3i	wp = chunkLocalToWorld(pos, _pos, CHUNK_SIZE);
 
-				int	y = height_map[pos.x + pos.z * CHUNK_SIZE];
+				std::shared_ptr<Biome>	dominant_biome;
+				float					height;
 
-				if (!biome_map[pos.x + pos.z * CHUNK_SIZE])
-					setBlock(pos, BLOCK_BEDROCK);
-				else
-					setBlock(pos, biome_map[pos.x + pos.z * CHUNK_SIZE]->get_block(wp, y));
+				Biome::get_biome(Vec2i(wp.x, wp.z), dominant_biome, height);
+
+				height_map[pos.x + pos.z * CHUNK_SIZE] = height;
+				biome_map[pos.x + pos.z * CHUNK_SIZE] = dominant_biome;
 			}
+
+		for (pos.x = 0; pos.x < CHUNK_SIZE; pos.x++)
+			for (pos.z = 0; pos.z < CHUNK_SIZE; pos.z++)
+				for (pos.y = 0; pos.y < CHUNK_SIZE; pos.y++)
+				{
+					WorldVec3i	wp = chunkLocalToWorld(pos, _pos, CHUNK_SIZE);
+
+					int	y = height_map[pos.x + pos.z * CHUNK_SIZE];
+
+					if (!biome_map[pos.x + pos.z * CHUNK_SIZE])
+						_setBlock(pos, BLOCK_BEDROCK);
+					else
+						_setBlock(pos, biome_map[pos.x + pos.z * CHUNK_SIZE]->get_block(wp, y));
+				}
+	}
 
 	_state = Chunk::State::GENERATED;
 
-	for (int dir = 0; dir < 6; dir++)
-	{
-		std::shared_ptr<Chunk> chunk = _world->getChunk(_pos + DIR_OFFSET[dir]);
-		if (chunk && chunk->state() >= Chunk::State::MESHED)
-			chunk->mesh();
-	}
+	mesh_neighbours();
 
 	mesh();
 }
@@ -82,39 +82,10 @@ void	Chunk::upload()
 	if (!_chunkMutex.try_lock())
 		return ;
 
-	if (VAO != 0)
-		glDeleteVertexArrays(1, &VAO);
-	if (VBO != 0)
-		glDeleteBuffers(1, &VBO);
-
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-
-	glBindVertexArray(VAO);
-
-	_mesh.insert(_mesh.end(), _transparent_mesh.begin(), _transparent_mesh.end());
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, _mesh.size() * sizeof(Vertex), _mesh.data(), GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, pos));
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
-	glEnableVertexAttribArray(1);
-
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
-	glEnableVertexAttribArray(2);
-
-	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
-	glEnableVertexAttribArray(3);
-
-	glBindVertexArray(0);
+	_solid_mesh.upload();
+	_transparent_mesh.upload();
 
 	_state = Chunk::State::UPLOADED;
-	_mesh_size = _mesh.size();
-	_mesh.clear();
-	_transparent_mesh.clear();
 
 	_chunkMutex.unlock();
 }
@@ -271,11 +242,22 @@ static Vec2f	getAtlasUV(Vec2f uv, int textureId)
 	return (atlasUV);
 }
 
+void	Chunk::mesh_neighbours()
+{
+	for (int dir = 0; dir < 6; dir++)
+	{
+		std::shared_ptr<Chunk> chunk = _world->getChunk(_pos + DIR_OFFSET[dir]);
+		if (chunk && chunk->state() >= Chunk::State::MESHED)
+			chunk->mesh();
+	}
+}
+
 void	Chunk::mesh()
 {
 	std::unique_lock<std::mutex>	lock(_chunkMutex);
 
-	_mesh.clear();
+	_solid_mesh.clear_data();
+	_transparent_mesh.clear_data();
 
 	std::shared_ptr<Chunk>	neighbours[6] = {0};
 
@@ -319,9 +301,7 @@ void	Chunk::mesh()
 							face.v2.color = color;
 							face.v3.color = color;
 
-							_mesh.push_back(face.v1);
-							_mesh.push_back(face.v2);
-							_mesh.push_back(face.v3);
+							_solid_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&face), sizeof(face));
 						}
 						continue ;
 					}
@@ -373,21 +353,13 @@ void	Chunk::mesh()
 							f2.v3.uv = getAtlasUV(f2.v3.uv, atlasId);
 							if (block == BLOCK_WATER || block == BLOCK_ICE)
 							{
-								_transparent_mesh.push_back(f1.v1);
-								_transparent_mesh.push_back(f1.v2);
-								_transparent_mesh.push_back(f1.v3);
-								_transparent_mesh.push_back(f2.v1);
-								_transparent_mesh.push_back(f2.v2);
-								_transparent_mesh.push_back(f2.v3);
+								_transparent_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&f1), sizeof(f1));
+								_transparent_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&f2), sizeof(f2));
 							}
 							else
 							{
-								_mesh.push_back(f1.v1);
-								_mesh.push_back(f1.v2);
-								_mesh.push_back(f1.v3);
-								_mesh.push_back(f2.v1);
-								_mesh.push_back(f2.v2);
-								_mesh.push_back(f2.v3);
+								_solid_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&f1), sizeof(f1));
+								_solid_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&f2), sizeof(f2));
 							}
 						}
 					}
@@ -403,9 +375,8 @@ void	Chunk::draw(Shader &shader)
 	shader.setMat4f("model", translate<float>(_pos * CHUNK_SIZE));
 	shader.setFloat("spawn_fade", SPAWN_FADE_TIME == 0 ? 1 : _spawn_fade / SPAWN_FADE_TIME);
 
-	glBindVertexArray(VAO);
-	glDrawArrays(GL_TRIANGLES, 0, _mesh_size);
-	glBindVertexArray(0);
+	_solid_mesh.draw();
+	_transparent_mesh.draw();
 }
 
 void	Chunk::save(const std::string &path)
@@ -427,16 +398,16 @@ void	Chunk::save(const std::string &path)
 
 void	Chunk::load(const std::string &path)
 {
-	struct stat	s;
-	stat(path.c_str(), &s);
-	if (s.st_size != sizeof(Chunk::Header) + CHUNK_VOLUME * sizeof(ChunkBlockStateId))
-		throw std::runtime_error("Invalid save file size");
-
 	std::ifstream	file;
 
 	file.open(path, std::ios::binary);
 	if (!file.is_open())
 		throw std::runtime_error("chunk failed to open " + path);
+
+	struct stat	s;
+	stat(path.c_str(), &s);
+	if (s.st_size != sizeof(Chunk::Header) + CHUNK_VOLUME * sizeof(ChunkBlockStateId))
+		throw std::runtime_error("Invalid save file size");
 
 	Chunk::Header	hdr;
 
@@ -450,6 +421,10 @@ void	Chunk::load(const std::string &path)
 	_blocks.resize(CHUNK_VOLUME);
 
 	file.read(reinterpret_cast<char*>(_blocks.data()), CHUNK_VOLUME * sizeof(ChunkBlockStateId));
+
+	for (auto b : _blocks)
+		if (b != BLOCK_AIR)
+			_non_air_blocks++;
 }
 
 bool	Chunk::try_load(const std::string &path)
@@ -459,7 +434,7 @@ bool	Chunk::try_load(const std::string &path)
 		load(path);
 		return (true);
 	}
-	catch (...)
+	catch (const std::exception &e)
 	{
 		return (false);
 	}

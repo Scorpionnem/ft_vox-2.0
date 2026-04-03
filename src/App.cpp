@@ -12,8 +12,11 @@
 
 void	updateCamera(Camera &cam, const Window::Events &events)
 {
-	float	speed = 50 * events.getDeltaTime();
+	float	speed = 5 * events.getDeltaTime();
 	float	sensibility = 50 * events.getDeltaTime();
+
+	if (events.getKey(SDLK_LCTRL))
+		speed = 50 * events.getDeltaTime();
 
 	if (events.getKey(SDLK_w))
 		cam.pos = cam.pos + cam.front * speed;
@@ -39,25 +42,62 @@ void	updateCamera(Camera &cam, const Window::Events &events)
 	cam.update(events.getDeltaTime(), events.getAspectRatio());
 }
 
+void	App::_place_block(BlockStateId block)
+{
+	bool	ray_hit;
+	Vec3i	ray_hit_pos;
+	Vec3i	ray_hit_prev_pos;
+	_world.castRayToBlock(_cam.pos, _cam.front, 8, ray_hit, ray_hit_pos, ray_hit_prev_pos);
+	if (ray_hit)
+	{
+		auto	chunk = _world.getChunk(worldToChunkWorld(ray_hit_prev_pos, CHUNK_SIZE));
+		if (chunk && chunk->state() >= Chunk::State::GENERATED)
+		{
+			chunk->setBlock(worldToChunkLocal(ray_hit_prev_pos, CHUNK_SIZE), block);
+			if (chunk->state() >= Chunk::State::MESHED)
+			{
+				chunk->mesh();
+				chunk->mesh_neighbours();
+			}
+		}
+	}
+}
+
+void	App::_break_block(void)
+{
+	bool	ray_hit;
+	Vec3i	ray_hit_pos;
+	Vec3i	ray_hit_prev_pos;
+	_world.castRayToBlock(_cam.pos, _cam.front, 8, ray_hit, ray_hit_pos, ray_hit_prev_pos);
+	if (ray_hit)
+	{
+		auto	chunk = _world.getChunk(worldToChunkWorld(ray_hit_pos, CHUNK_SIZE));
+		if (chunk && chunk->state() >= Chunk::State::GENERATED)
+		{
+			chunk->setBlock(worldToChunkLocal(ray_hit_pos, CHUNK_SIZE), BLOCK_AIR);
+			if (chunk->state() >= Chunk::State::MESHED)
+			{
+				chunk->mesh();
+				chunk->mesh_neighbours();
+			}
+		}
+	}
+}
+
 extern std::vector<std::shared_ptr<Biome>>	ALL_BIOMES;
 
 void	App::_loop(void)
 {
-	Camera	cam;
-
-	cam.pos.x = 0;
-	cam.pos.z = 0;
-	cam.pos.y = 130;
-
-	ThreadPool	genThreads;
-	genThreads.add(8);
+	_cam.pos.x = 0;
+	_cam.pos.z = 0;
+	_cam.pos.y = 130;
 
 	bool	showDebug = false;
 	float	fog_power = 4;
 	bool	fog_toggle = true;
 	Vec3f	sky_color(194 / 255.0, 235.0 / 255.0, 1.0);
 	Vec3f	render_distance = Vec3f(8);
-	Vec3f	fog_distance = render_distance * CHUNK_SIZE + CHUNK_SIZE;
+	Vec3f	fog_distance = render_distance * CHUNK_SIZE;
 
 	while (_window.is_open())
 	{
@@ -68,21 +108,26 @@ void	App::_loop(void)
 			break ;
 		}
 
-		updateCamera(cam, events);
+		updateCamera(_cam, events);
 
-		_world.setUpdateCenter(cam.pos);
-		_world.update(genThreads, events.getDeltaTime());
+		if (events.getMouseBtnPressed(SDL_BUTTON_LEFT))
+			_break_block();
+		if (events.getMouseBtnPressed(SDL_BUTTON_RIGHT))
+			_place_block(BLOCK_STONE);
 
-		auto	view = _world.getVision(cam, render_distance);
+		_world.setUpdateCenter(_cam.pos);
+		_world.update(_generation_threads, events.getDeltaTime());
+
+		auto	view = _world.getVision(_cam, render_distance);
 
 		_atlas.bind(0);
 
 		_terrain_shader.use();
-		_terrain_shader.setMat4f("view", cam.getViewMatrix());
+		_terrain_shader.setMat4f("view", _cam.getViewMatrix());
 		_terrain_shader.setMat4f("proj", perspective<float>(90, events.getAspectRatio(), 0.1, 1000.0));
 
 		_terrain_shader.setVec3f("RENDER_DISTANCE", render_distance * CHUNK_SIZE);
-		_terrain_shader.setVec3f("VIEW_POS", cam.pos);
+		_terrain_shader.setVec3f("VIEW_POS", _cam.pos);
 		_terrain_shader.setFloat("FOG_POWER", fog_power);
 		_terrain_shader.setVec3f("FOG_COLOR", sky_color);
 		_terrain_shader.setBool("FOG_TOGGLE", fog_toggle);
@@ -103,8 +148,8 @@ void	App::_loop(void)
 		if (showDebug)
 		{
 			_world.imgui();
-			cam.imgui();
-			genThreads.imgui();
+			_cam.imgui();
+			_generation_threads.imgui();
 			if (ImGui::Begin("ft_vox"))
 			{
 				ImGui::Text("FPS: %.2f", 1.0 / events.getDeltaTime());
@@ -118,7 +163,7 @@ void	App::_loop(void)
 
 			if (ImGui::Begin("generation"))
 			{
-				Vec2f	p = {cam.pos.x, cam.pos.z};
+				Vec2f	p = {_cam.pos.x, _cam.pos.z};
 				ImGui::Text("C: %.2f", Biome::get_continentalness(p));
 				ImGui::Text("E: %.2f", Biome::get_erosion(p));
 				ImGui::Text("T: %.2f", Biome::get_temperature(p));
@@ -157,6 +202,8 @@ void	App::_init()
 	_terrain_shader.load(GL_FRAGMENT_SHADER, "assets/shaders/mesh.fs");
 	_terrain_shader.link();
 	_terrain_shader.setInt("atlas", 0);
+
+	_generation_threads.add(8);
 
 	ALL_BIOMES.push_back(std::make_shared<DesertBiome>());
 

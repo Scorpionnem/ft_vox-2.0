@@ -68,3 +68,14 @@ inline Vec2<T>	frac(const Vec2<T> &v)
 {
 	return (Vec2<T>(frac(v.x), frac(v.y)));
 }
+
+inline int	sign(float n)
+{
+	return (n > 0 ? 1 : -1);
+}
+
+template <typename T>
+inline Vec3<T>	sign(const Vec3<T> &v)
+{
+	return (Vec3<T>(sign(v.x), sign(v.y), sign(v.z)));
+}

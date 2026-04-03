@@ -41,6 +41,61 @@ class	World
 				return (NULL);
 			return (find->second);
 		}
+
+		void	castRayToBlock(const WorldVec3f &pos, const Vec3f &dir, int MAX_STEPS, bool &hit, Vec3i &hit_pos, Vec3i &prev_hit_pos)
+		{
+				prev_hit_pos = floor(pos);
+				hit_pos = floor(pos);
+				hit = false;
+
+				Vec3f	deltaDist = abs(Vec3f(1.0f) / dir);
+				Vec3f	sideDist = (sign(dir) * (Vec3f(hit_pos) - pos) + (sign(dir) * 0.5f) + 0.5f) * deltaDist;
+
+				Vec3i	rayStep = Vec3i(sign(dir));
+
+				for (int i = 0; i < MAX_STEPS; ++i)
+				{
+					prev_hit_pos = hit_pos;
+					moveRay(hit_pos, sideDist, deltaDist, rayStep);
+					auto chunk = getChunk(worldToChunkWorld(hit_pos, CHUNK_SIZE));
+					if (!chunk || chunk->state() < Chunk::State::GENERATED)
+						continue ;
+					if (chunk->getBlock(worldToChunkLocal(hit_pos, CHUNK_SIZE)) != BLOCK_AIR)
+					{
+						hit = true;
+						break ;
+					}
+				}
+		}
+		void	moveRay(Vec3i &mapPos, Vec3f &sideDist, const Vec3f &deltaDist, const Vec3i &rayStep)
+		{
+			if (sideDist.x < sideDist.y)
+			{
+				if (sideDist.x < sideDist.z)
+				{
+					sideDist.x += deltaDist.x;
+					mapPos.x += rayStep.x;
+				}
+				else
+				{
+					sideDist.z += deltaDist.z;
+					mapPos.z += rayStep.z;
+				}
+			}
+			else
+			{
+				if (sideDist.y < sideDist.z)
+				{
+					sideDist.y += deltaDist.y;
+					mapPos.y += rayStep.y;
+				}
+				else
+				{
+					sideDist.z += deltaDist.z;
+					mapPos.z += rayStep.z;
+				}
+			}
+		}
 	private:
 		std::shared_ptr<Chunk>	_addChunk(const ChunkWorldVec3i &pos)
 		{

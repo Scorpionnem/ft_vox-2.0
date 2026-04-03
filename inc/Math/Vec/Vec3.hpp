@@ -115,6 +115,18 @@ Vec3<T>	sin(const Vec3<T> &v)
 }
 
 template<typename T>
+Vec3<T>	floor(const Vec3<T> &v)
+{
+	return (Vec3<T>(std::floor(v.x), std::floor(v.y), std::floor(v.z)));
+}
+
+template<typename T>
+Vec3<T>	abs(const Vec3<T> &v)
+{
+	return (Vec3<T>(std::abs(v.x), std::abs(v.y), std::abs(v.z)));
+}
+
+template<typename T>
 float	max(const Vec3<T> &v)
 {
 	return (std::max(std::max(v.x, v.y), v.z));
