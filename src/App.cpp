@@ -42,43 +42,42 @@ void	updateCamera(Camera &cam, const Window::Events &events)
 	cam.update(events.getDeltaTime(), events.getAspectRatio());
 }
 
-void	App::_place_block(BlockStateId block)
+void	App::_cast_ray(const Window::Events &events)
 {
-	bool	ray_hit;
-	Vec3i	ray_hit_pos;
-	Vec3i	ray_hit_prev_pos;
-	_world.castRayToBlock(_cam.pos, _cam.front, 8, ray_hit, ray_hit_pos, ray_hit_prev_pos);
-	if (ray_hit)
+	_world.castRayToBlock(_cam.pos, _cam.front, 8, _ray_hit, _ray_hit_pos, _ray_prev_hit_pos);
+
+	if (_ray_hit)
 	{
-		auto	chunk = _world.getChunk(worldToChunkWorld(ray_hit_prev_pos, CHUNK_SIZE));
-		if (chunk && chunk->state() >= Chunk::State::GENERATED)
+		_selected_block_shader.use();
+		_selected_block_shader.setMat4f("view", _cam.getViewMatrix());
+		_selected_block_shader.setMat4f("model", translate<float>(_ray_hit_pos));
+		_selected_block_shader.setMat4f("proj", perspective<float>(90, events.getAspectRatio(), 0.1, 1000.0));
+		_cube_mesh.draw();
+
+		if (events.getMouseBtnPressed(SDL_BUTTON_LEFT))
 		{
-			chunk->setBlock(worldToChunkLocal(ray_hit_prev_pos, CHUNK_SIZE), block);
-			if (chunk->state() >= Chunk::State::MESHED)
+			auto	chunk = _world.getChunk(worldToChunkWorld(_ray_hit_pos, CHUNK_SIZE));
+			if (chunk && chunk->state() >= Chunk::State::GENERATED)
 			{
-				chunk->mesh();
-				chunk->mesh_neighbours();
+				chunk->setBlock(worldToChunkLocal(_ray_hit_pos, CHUNK_SIZE), BLOCK_AIR);
+				if (chunk->state() >= Chunk::State::MESHED)
+				{
+					chunk->mesh();
+					chunk->mesh_neighbours();
+				}
 			}
 		}
-	}
-}
-
-void	App::_break_block(void)
-{
-	bool	ray_hit;
-	Vec3i	ray_hit_pos;
-	Vec3i	ray_hit_prev_pos;
-	_world.castRayToBlock(_cam.pos, _cam.front, 8, ray_hit, ray_hit_pos, ray_hit_prev_pos);
-	if (ray_hit)
-	{
-		auto	chunk = _world.getChunk(worldToChunkWorld(ray_hit_pos, CHUNK_SIZE));
-		if (chunk && chunk->state() >= Chunk::State::GENERATED)
+		if (events.getMouseBtnPressed(SDL_BUTTON_RIGHT))
 		{
-			chunk->setBlock(worldToChunkLocal(ray_hit_pos, CHUNK_SIZE), BLOCK_AIR);
-			if (chunk->state() >= Chunk::State::MESHED)
+			auto	chunk = _world.getChunk(worldToChunkWorld(_ray_prev_hit_pos, CHUNK_SIZE));
+			if (chunk && chunk->state() >= Chunk::State::GENERATED)
 			{
-				chunk->mesh();
-				chunk->mesh_neighbours();
+				chunk->setBlock(worldToChunkLocal(_ray_prev_hit_pos, CHUNK_SIZE), BLOCK_COBBLESTONE);
+				if (chunk->state() >= Chunk::State::MESHED)
+				{
+					chunk->mesh();
+					chunk->mesh_neighbours();
+				}
 			}
 		}
 	}
@@ -110,10 +109,7 @@ void	App::_loop(void)
 
 		updateCamera(_cam, events);
 
-		if (events.getMouseBtnPressed(SDL_BUTTON_LEFT))
-			_break_block();
-		if (events.getMouseBtnPressed(SDL_BUTTON_RIGHT))
-			_place_block(BLOCK_STONE);
+		_cast_ray(events);
 
 		_world.setUpdateCenter(_cam.pos);
 		_world.update(_generation_threads, events.getDeltaTime());
@@ -141,6 +137,15 @@ void	App::_loop(void)
 			if (chunk->state() < Chunk::State::UPLOADED)
 				chunk->upload();
 			chunk->draw(_terrain_shader);
+
+			if (showDebug)
+			{
+				_bounding_box_shader.use();
+				_bounding_box_shader.setMat4f("model", translate<float>(chunk->pos() * CHUNK_SIZE) * scale<float>(Vec3f(CHUNK_SIZE)));
+				_bounding_box_shader.setMat4f("view", _cam.getViewMatrix());
+				_bounding_box_shader.setMat4f("proj", perspective<float>(90, events.getAspectRatio(), 0.1, 1000.0));
+				_cube_mesh.draw();
+			}
 		}
 
 		if (events.getKeyPressed(SDLK_F3))
@@ -202,6 +207,38 @@ void	App::_init()
 	_terrain_shader.load(GL_FRAGMENT_SHADER, "assets/shaders/mesh.fs");
 	_terrain_shader.link();
 	_terrain_shader.setInt("atlas", 0);
+
+	_selected_block_shader.load(GL_VERTEX_SHADER, "assets/shaders/selected_block.vs");
+	_selected_block_shader.load(GL_FRAGMENT_SHADER, "assets/shaders/selected_block.fs");
+	_selected_block_shader.link();
+	_selected_block_shader.setInt("atlas", 0);
+
+	_bounding_box_shader.load(GL_VERTEX_SHADER, "assets/shaders/bounding_box.vs");
+	_bounding_box_shader.load(GL_FRAGMENT_SHADER, "assets/shaders/bounding_box.fs");
+	_bounding_box_shader.link();
+	_bounding_box_shader.setInt("atlas", 0);
+
+	_cube_mesh.add_vertex_layout(0, 3, GL_FLOAT, offsetof(Vertex, pos));
+	_cube_mesh.add_vertex_layout(1, 3, GL_FLOAT, offsetof(Vertex, normal));
+	_cube_mesh.add_vertex_layout(2, 3, GL_FLOAT, offsetof(Vertex, color));
+	_cube_mesh.add_vertex_layout(3, 2, GL_FLOAT, offsetof(Vertex, uv));
+	_cube_mesh.set_sizeof_layout(sizeof(Vertex));
+
+	extern Face	FACE2[6];
+	extern Face	FACE1[6];
+	_cube_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&FACE2[0]), sizeof(Face));
+	_cube_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&FACE2[1]), sizeof(Face));
+	_cube_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&FACE2[2]), sizeof(Face));
+	_cube_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&FACE2[3]), sizeof(Face));
+	_cube_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&FACE2[4]), sizeof(Face));
+	_cube_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&FACE2[5]), sizeof(Face));
+	_cube_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&FACE1[0]), sizeof(Face));
+	_cube_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&FACE1[1]), sizeof(Face));
+	_cube_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&FACE1[2]), sizeof(Face));
+	_cube_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&FACE1[3]), sizeof(Face));
+	_cube_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&FACE1[4]), sizeof(Face));
+	_cube_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&FACE1[5]), sizeof(Face));
+	_cube_mesh.upload();
 
 	_generation_threads.add(8);
 

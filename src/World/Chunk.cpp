@@ -103,7 +103,7 @@ constexpr const Vec3f	V6(1, 0, 1);
 constexpr const Vec3f	V7(1, 0, 0);
 constexpr const Vec3f	V8(0, 0, 0);
 
-constexpr const Face	FACE1[6] =
+Face	FACE1[6] =
 {
 	Face( // TOP
 		Vertex(V1, Vec3f(0,1,0), UV01),
@@ -137,7 +137,7 @@ constexpr const Face	FACE1[6] =
 	),
 };
 
-constexpr const Face	FACE2[6] =
+Face	FACE2[6] =
 {
 	Face( // TOP
 		Vertex(V2, Vec3f(0,1,0), UV11),
