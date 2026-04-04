@@ -79,10 +79,16 @@ _RED 					:= $(shell $(TPUT) setaf 1)
 _GRAY 					:= $(shell $(TPUT) setaf 8)
 _PURPLE 				:= $(shell $(TPUT) setaf 5)
 
-compile: imgui glad stb_image
-	@make -j all --no-print-directory
+all:
+	@/bin/time --format='$(_GREEN)(%es)$(_RESET) Done' make timed_all --no-print-directory
 
-all: $(NAME)
+timed_all:
+	@make clone_dependencies --no-print-directory --silent
+	@make -j compile --no-print-directory --silent
+
+clone_dependencies: imgui glad stb_image
+
+compile: $(NAME)
 
 BUILD_DIR := build/
 ASSETS_DIR := assets/
@@ -102,26 +108,26 @@ imgui: $(EXTERNAL_DIR)
 	@if ls external | grep -q "imgui"; then \
 		printf ""; \
 	else \
-		echo "\033[31;1mDownloading imgui config\033[0m";\
+		echo "Downloading $(_BOLD)imgui$(_RESET)";\
 		git clone https://github.com/ocornut/imgui.git $(IMGUI);\
-		echo "\033[31;1mDownloaded imgui config\033[0m";\
+		echo "Downloaded $(_BOLD)imgui$(_RESET)";\
 	fi
 
 stb_image: $(EXTERNAL_DIR)
 	@if ls external/stb_image | grep -q "stb_image.h"; then \
 		printf ""; \
 	else\
-		echo "\033[31;1mDownloading stb_image.h\033[0m"; \
+		echo "Downloading $(_BOLD)stb_image.h$(_RESET)"; \
 		mkdir -p external/stb_image; \
 		curl --silent -o external/stb_image/stb_image.h https://raw.githubusercontent.com/nothings/stb/master/stb_image.h;\
-		echo "\033[31;1mDownloaded stb_image.h\033[0m"; \
+		echo "Downloaded $(_BOLD)stb_image.h$(_RESET)"; \
 	fi
 
 glad: $(EXTERNAL_DIR)
 	@if ls external | grep -q "glad"; then\
 		printf "";\
 	else \
-		echo "\033[31;1mDownloading glad\033[0m";\
+		echo "Downloading $(_BOLD)glad$(_RESET)";\
 		mkdir $(EXTERNAL_DIR)/glad;\
 		cd $(EXTERNAL_DIR)/glad;\
 		mkdir glad;\
@@ -129,19 +135,19 @@ glad: $(EXTERNAL_DIR)
 		curl https://raw.githubusercontent.com/Manualouest/42_postCC/refs/heads/ft_scop/libs/glad/glad.h --output glad.h;\
 		cd ..;\
 		curl https://raw.githubusercontent.com/Manualouest/42_postCC/refs/heads/ft_scop/libs/glad/glad.c --output glad.cpp;\
-		echo "\033[31;1mDownloaded glad\033[0m";\
+		echo "Downloaded $(_BOLD)glad$(_RESET)";\
 	fi
 
 $(NAME): $(OBJS)
 	@echo 'Linking $(_BOLD)$(NAME)$(_RESET)'
-	@/bin/time --format='$(_GREEN)(%Us)$(_RESET) Linked $(_BOLD)$(NAME)$(_RESET)' $(CXX) $(CXXFLAGS) $(LFLAGS) $(INCLUDE_DIRS) -o $@ $^
+	@/bin/time --format='$(_GREEN)(%es)$(_RESET) Linked $(_BOLD)$(NAME)$(_RESET)' $(CXX) $(CXXFLAGS) $(LFLAGS) $(INCLUDE_DIRS) -o $@ $^
 
 $(OBJ_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	@echo 'Compiling $(_BOLD)$<$(_RESET)'
-	@/bin/time --format='$(_GREEN)(%Us)$(_RESET) Compiled $(_BOLD)$@$(_RESET)' $(CXX) $(CXXFLAGS) $(INCLUDE_DIRS) -c $< -o $@
+	@/bin/time --format='$(_GREEN)(%es)$(_RESET) Compiled $(_BOLD)$@$(_RESET)' $(CXX) $(CXXFLAGS) $(INCLUDE_DIRS) -c $< -o $@
 
-re: fclean compile
+re: fclean all
 
 fclean: clean
 	@echo 'Removed $(_BOLD)$(NAME)$(_RESET)'
