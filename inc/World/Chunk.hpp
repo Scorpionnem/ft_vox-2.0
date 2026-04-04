@@ -19,7 +19,8 @@
 #include "Mesh.hpp"
 
 #define CHUNK_SIZE			32
-#define CHUNK_VOLUME		CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
+#define REGION_SIZE			(16 * CHUNK_SIZE)
+#define CHUNK_VOLUME		(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE)
 
 #define SPAWN_FADE_TIME		0.3
 
@@ -163,6 +164,10 @@ class	Chunk
 				_setBlock(bp, block);
 			}
 		}
+		inline bool	_isInBoundsWorld(const WorldVec3i &pos)
+		{
+			return (worldToChunkWorld(pos, CHUNK_SIZE) == _pos);
+		}
 		inline bool	_isInBounds(const ChunkLocalVec3i &pos)
 		{
 			return (pos.x >= 0 && pos.y >= 0 && pos.z >= 0 && pos.x < CHUNK_SIZE && pos.y < CHUNK_SIZE && pos.z < CHUNK_SIZE);
@@ -171,4 +176,8 @@ class	Chunk
 		{
 			return (pos.x + pos.y * CHUNK_SIZE + pos.z * CHUNK_SIZE * CHUNK_SIZE);
 		}
+
+		void	_generateTerrain();
+		void	_generateFeatures();
+		void	_generateStructures();
 };

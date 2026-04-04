@@ -169,6 +169,132 @@ static Vec2f	getAtlasUV(Vec2f uv, int textureId)
 
 std::vector<std::shared_ptr<Biome>>	ALL_BIOMES;
 
+void	Chunk::_generateFeatures()
+{
+	ChunkWorldVec3i	chunk_pos;
+	for (chunk_pos.x = _pos.x - 1; chunk_pos.x <= _pos.x + 1; chunk_pos.x++)
+		for (chunk_pos.z = _pos.z - 1; chunk_pos.z <= _pos.z + 1; chunk_pos.z++)
+			for (chunk_pos.y = _pos.y - 1; chunk_pos.y <= _pos.y + 1; chunk_pos.y++)
+			{
+				#define STRUCTURES_PER_CHUNK 8
+				for (int i = 0; i < STRUCTURES_PER_CHUNK; i++)
+				{
+					ChunkWorldVec3i	gen_chunk_pos = Vec3i(chunk_pos.x, 0, chunk_pos.z);
+					ChunkWorldVec3i	spiced_gen_chunk_pos = Vec3i(chunk_pos.x + i, 0, chunk_pos.z + i);
+					WorldVec3i	structure_pos = chunkLocalToWorld(rand3dTo3d(spiced_gen_chunk_pos) * CHUNK_SIZE, gen_chunk_pos, CHUNK_SIZE);
+
+					std::shared_ptr<Biome>	dominant_biome;
+					float					max_height;
+					Biome::get_biome(Vec2i(structure_pos.x, structure_pos.z), dominant_biome, max_height);
+
+					structure_pos.y = max_height;
+
+					if (rand3dTo1d(structure_pos) > dominant_biome->tree_probab)
+						continue ;
+
+					if (structure_pos.y <= WATER_LEVEL)
+						continue ;
+
+					WorldVec3i	structure_block_pos;
+					for (structure_block_pos.x = structure_pos.x - 2; structure_block_pos.x <= structure_pos.x + 2; structure_block_pos.x++)
+						for (structure_block_pos.z = structure_pos.z - 2; structure_block_pos.z <= structure_pos.z + 2; structure_block_pos.z++)
+							for (structure_block_pos.y = structure_pos.y + 4; structure_block_pos.y <= structure_pos.y + 8; structure_block_pos.y++)
+								_setBlockFromWorld(structure_block_pos, BLOCK_OAK_LEAVES);
+					structure_block_pos = structure_pos;
+					for (structure_block_pos.y = structure_pos.y; structure_block_pos.y <= structure_pos.y + 7; structure_block_pos.y++)
+						_setBlockFromWorld(structure_block_pos, BLOCK_OAK_LOG);
+				}
+			}
+}
+
+bool	is_inside(Vec3i pos_a, Vec3i size_a, Vec3i pos_b, Vec3i size_b)
+{
+	return (
+		pos_a.x < pos_b.x + size_b.x &&
+		pos_a.x + size_a.x > pos_b.x &&
+		pos_a.y < pos_b.y + size_b.y &&
+		pos_a.y + size_a.y > pos_b.y &&
+		pos_a.z < pos_b.z + size_b.z &&
+		pos_a.z + size_a.z > pos_b.z
+	);
+}
+
+void	Chunk::_generateStructures()
+{
+	RegionWorldVec3i	cur_region_pos = worldToRegionWorld(_pos * CHUNK_SIZE, REGION_SIZE);
+	RegionWorldVec3i	region_pos;
+	for (region_pos.x = cur_region_pos.x - 1; region_pos.x <= cur_region_pos.x + 1; region_pos.x++)
+		for (region_pos.z = cur_region_pos.z - 1; region_pos.z <= cur_region_pos.z + 1; region_pos.z++)
+			for (region_pos.y = cur_region_pos.y - 1; region_pos.y <= cur_region_pos.y + 1; region_pos.y++)
+			{
+				#define STRUCTURES_PER_REGION 8
+				for (int i = 0; i < STRUCTURES_PER_REGION; i++)
+				{
+					RegionWorldVec3i	gen_region_pos = Vec3i(region_pos.x, 0, region_pos.z);
+					RegionWorldVec3i	spiced_gen_region_pos = Vec3i(region_pos.x + i, 0, region_pos.z + i);
+					WorldVec3i			structure_pos = regionLocalToWorld(rand3dTo3d(spiced_gen_region_pos) * REGION_SIZE, gen_region_pos, REGION_SIZE);
+
+					std::shared_ptr<Biome>	dominant_biome;
+					float					max_height;
+					Biome::get_biome(Vec2i(structure_pos.x, structure_pos.z), dominant_biome, max_height);
+
+					// maximum size of the structure
+					int	STRUCTURE_SIZE = 32;
+					if (!is_inside(_pos * CHUNK_SIZE, CHUNK_SIZE, structure_pos - STRUCTURE_SIZE, REGION_SIZE))
+						continue ;
+
+					// if (rand3dTo1d(structure_pos) > dominant_biome->tree_probab)
+					// 	continue ;
+
+					// if (structure_pos.y <= WATER_LEVEL)
+					// 	continue ;
+
+					#define CUBE_SIZE 32
+					WorldVec3i	structure_block_pos;
+					for (structure_block_pos.y = structure_pos.y - CUBE_SIZE / 2; structure_block_pos.y < structure_pos.y + CUBE_SIZE / 2; structure_block_pos.y++)
+						for (structure_block_pos.x = structure_pos.x - CUBE_SIZE / 2; structure_block_pos.x < structure_pos.x + CUBE_SIZE / 2; structure_block_pos.x++)
+							for (structure_block_pos.z = structure_pos.z - CUBE_SIZE / 2; structure_block_pos.z < structure_pos.z + CUBE_SIZE / 2; structure_block_pos.z++)
+							{
+								if (structure_block_pos.x == (structure_pos.x + CUBE_SIZE / 2) - 1
+									|| structure_block_pos.y == (structure_pos.y + CUBE_SIZE / 2) - 1
+									|| structure_block_pos.z == (structure_pos.z + CUBE_SIZE / 2) - 1
+									|| structure_block_pos.x == structure_pos.x - CUBE_SIZE / 2
+									|| structure_block_pos.y == structure_pos.y - CUBE_SIZE / 2
+									|| structure_block_pos.z == structure_pos.z - CUBE_SIZE / 2)
+									_setBlockFromWorld(structure_block_pos, BLOCK_BRICKS);
+								else
+									_setBlockFromWorld(structure_block_pos, BLOCK_AIR);
+							}
+				}
+			}
+}
+
+void	Chunk::_generateTerrain()
+{
+	ChunkLocalVec3i	pos;
+
+	for (pos.x = 0; pos.x < CHUNK_SIZE; pos.x++)
+		for (pos.z = 0; pos.z < CHUNK_SIZE; pos.z++)
+		{
+			WorldVec3i	wp = chunkLocalToWorld(pos, _pos, CHUNK_SIZE);
+
+			std::shared_ptr<Biome>	dominant_biome;
+			float					max_height;
+
+			Biome::get_biome(Vec2i(wp.x, wp.z), dominant_biome, max_height);
+
+			for (pos.y = 0; pos.y < CHUNK_SIZE; pos.y++)
+			{
+				WorldVec3i	wp = chunkLocalToWorld(pos, _pos, CHUNK_SIZE);
+
+				if (!dominant_biome)
+					_setBlock(pos, BLOCK_BEDROCK);
+				else
+					_setBlock(pos, dominant_biome->get_block(wp, max_height));
+			}
+		}
+}
+
 void	Chunk::generate(/*Generator *gen*/)
 {
 	if (try_load(get_chunk_path(_pos)))
@@ -177,63 +303,9 @@ void	Chunk::generate(/*Generator *gen*/)
 	{
 		_blocks.resize(CHUNK_VOLUME);
 
-		ChunkLocalVec3i	pos;
-
-		for (pos.x = 0; pos.x < CHUNK_SIZE; pos.x++)
-			for (pos.z = 0; pos.z < CHUNK_SIZE; pos.z++)
-			{
-				WorldVec3i	wp = chunkLocalToWorld(pos, _pos, CHUNK_SIZE);
-
-				std::shared_ptr<Biome>	dominant_biome;
-				float					max_height;
-
-				Biome::get_biome(Vec2i(wp.x, wp.z), dominant_biome, max_height);
-
-				for (pos.y = 0; pos.y < CHUNK_SIZE; pos.y++)
-				{
-					WorldVec3i	wp = chunkLocalToWorld(pos, _pos, CHUNK_SIZE);
-
-					if (!dominant_biome)
-						_setBlock(pos, BLOCK_BEDROCK);
-					else
-						_setBlock(pos, dominant_biome->get_block(wp, max_height));
-				}
-			}
-
-		ChunkWorldVec3i	chunk_pos;
-		for (chunk_pos.x = _pos.x - 1; chunk_pos.x <= _pos.x + 1; chunk_pos.x++)
-			for (chunk_pos.z = _pos.z - 1; chunk_pos.z <= _pos.z + 1; chunk_pos.z++)
-				for (chunk_pos.y = _pos.y - 1; chunk_pos.y <= _pos.y + 1; chunk_pos.y++)
-				{
-					#define STRUCTURES_PER_CHUNK 8
-					for (int i = 0; i < STRUCTURES_PER_CHUNK; i++)
-					{
-						ChunkWorldVec3i	gen_chunk_pos = Vec3i(chunk_pos.x, 0, chunk_pos.z);
-						ChunkWorldVec3i	spiced_gen_chunk_pos = Vec3i(chunk_pos.x + i, 0, chunk_pos.z + i);
-						WorldVec3i	structure_pos = chunkLocalToWorld(rand3dTo3d(spiced_gen_chunk_pos) * CHUNK_SIZE, gen_chunk_pos, CHUNK_SIZE);
-
-						std::shared_ptr<Biome>	dominant_biome;
-						float					max_height;
-						Biome::get_biome(Vec2i(structure_pos.x, structure_pos.z), dominant_biome, max_height);
-
-						structure_pos.y = max_height;
-
-						if (rand3dTo1d(structure_pos) > dominant_biome->tree_probab)
-							continue ;
-
-						if (structure_pos.y <= WATER_LEVEL)
-							continue ;
-
-						WorldVec3i	structure_block_pos;
-						for (structure_block_pos.x = structure_pos.x - 2; structure_block_pos.x <= structure_pos.x + 2; structure_block_pos.x++)
-							for (structure_block_pos.z = structure_pos.z - 2; structure_block_pos.z <= structure_pos.z + 2; structure_block_pos.z++)
-								for (structure_block_pos.y = structure_pos.y + 4; structure_block_pos.y <= structure_pos.y + 8; structure_block_pos.y++)
-									_setBlockFromWorld(structure_block_pos, BLOCK_OAK_LEAVES);
-						structure_block_pos = structure_pos;
-						for (structure_block_pos.y = structure_pos.y; structure_block_pos.y <= structure_pos.y + 7; structure_block_pos.y++)
-							_setBlockFromWorld(structure_block_pos, BLOCK_OAK_LOG);
-					}
-				}
+		_generateTerrain();
+		_generateFeatures();
+		_generateStructures();
 	}
 
 	_state = Chunk::State::GENERATED;

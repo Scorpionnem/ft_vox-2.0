@@ -24,6 +24,7 @@ using ChunkBlockStateId = 	uint16_t;
 #define BLOCK_GRASS 40
 #define BLOCK_OAK_LEAVES 52
 #define BLOCK_OAK_LOG 20
+#define BLOCK_BRICKS 7
 #define BLOCK_TALL_GRASS 39
 #define BLOCK_DEAD_BUSH 55
 #define BLOCK_SNOW 66

@@ -4,8 +4,12 @@
 
 /* Position in chunk local space (0-CHUNK_SIZE) */
 using ChunkLocalVec3i	= 	Vec3i;
+/* Position in region local space (0-REGION_SIZE) */
+using RegionLocalVec3i	= 	Vec3i;
 /* Position in chunk world space */
 using ChunkWorldVec3i	= 	Vec3i;
+/* Position in chunk world space */
+using RegionWorldVec3i	= 	Vec3i;
 /* Position in world space */
 using WorldVec3i		= 	Vec3i;
 
@@ -27,7 +31,7 @@ inline int	floorMod(int x, int d)
 	return (m < 0) ? (m + d) : m;
 }
 
-inline ChunkWorldVec3i	worldToChunkWorld(const ChunkLocalVec3i &pos, int chunk_size)
+inline ChunkWorldVec3i	worldToChunkWorld(const WorldVec3i &pos, int chunk_size)
 {
 	return ChunkWorldVec3i(
 		floorDiv(pos.x, chunk_size),
@@ -35,6 +39,7 @@ inline ChunkWorldVec3i	worldToChunkWorld(const ChunkLocalVec3i &pos, int chunk_s
 		floorDiv(pos.z, chunk_size)
 	);
 }
+
 inline WorldVec3i	chunkLocalToWorld(const ChunkLocalVec3i &pos, const ChunkWorldVec3i &chunk_pos, int chunk_size)
 {
 	return (pos + (chunk_pos * chunk_size));
@@ -46,5 +51,28 @@ inline ChunkLocalVec3i	worldToChunkLocal(const WorldVec3i &pos, int chunk_size)
 		floorMod(pos.x, chunk_size),
 		floorMod(pos.y, chunk_size),
 		floorMod(pos.z, chunk_size)
+	);
+}
+
+inline RegionWorldVec3i	worldToRegionWorld(const WorldVec3i &pos, int region_size)
+{
+	return ChunkWorldVec3i(
+		floorDiv(pos.x, region_size),
+		floorDiv(pos.y, region_size),
+		floorDiv(pos.z, region_size)
+	);
+}
+
+inline WorldVec3i	regionLocalToWorld(const RegionLocalVec3i &pos, const RegionWorldVec3i &region_pos, int region_size)
+{
+	return (pos + (region_pos * region_size));
+}
+
+inline RegionLocalVec3i	worldToRegionLocal(const WorldVec3i &pos, int region_size)
+{
+	return RegionLocalVec3i(
+		floorMod(pos.x, region_size),
+		floorMod(pos.y, region_size),
+		floorMod(pos.z, region_size)
 	);
 }
