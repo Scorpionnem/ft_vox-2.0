@@ -24,6 +24,8 @@ struct	Biome
 	Range	temperature;
 	Range	humidity;
 
+	float	tree_probab = 0;
+
 	// Returns height for biome gen
 	virtual float			get_height(const Vec2i &pos) = 0;
 	// Returns block at pos with biome parameters

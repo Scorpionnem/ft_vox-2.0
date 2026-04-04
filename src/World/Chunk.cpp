@@ -205,27 +205,34 @@ void	Chunk::generate(/*Generator *gen*/)
 			for (chunk_pos.z = _pos.z - 1; chunk_pos.z <= _pos.z + 1; chunk_pos.z++)
 				for (chunk_pos.y = _pos.y - 1; chunk_pos.y <= _pos.y + 1; chunk_pos.y++)
 				{
-					ChunkWorldVec3i	gen_chunk_pos = Vec3i(chunk_pos.x, 0, chunk_pos.z);
-					WorldVec3i	structure_pos = chunkLocalToWorld(rand3dTo3d(gen_chunk_pos) * CHUNK_SIZE, gen_chunk_pos, CHUNK_SIZE);
+					#define STRUCTURES_PER_CHUNK 8
+					for (int i = 0; i < STRUCTURES_PER_CHUNK; i++)
+					{
+						ChunkWorldVec3i	gen_chunk_pos = Vec3i(chunk_pos.x, 0, chunk_pos.z);
+						ChunkWorldVec3i	spiced_gen_chunk_pos = Vec3i(chunk_pos.x + i, 0, chunk_pos.z + i);
+						WorldVec3i	structure_pos = chunkLocalToWorld(rand3dTo3d(spiced_gen_chunk_pos) * CHUNK_SIZE, gen_chunk_pos, CHUNK_SIZE);
 
-					std::shared_ptr<Biome>	dominant_biome;
-					float					max_height;
-					Biome::get_biome(Vec2i(structure_pos.x, structure_pos.z), dominant_biome, max_height);
+						std::shared_ptr<Biome>	dominant_biome;
+						float					max_height;
+						Biome::get_biome(Vec2i(structure_pos.x, structure_pos.z), dominant_biome, max_height);
 
-					structure_pos.y = max_height;
+						structure_pos.y = max_height;
 
-					if (structure_pos.y <= WATER_LEVEL)
-						continue ;
+						if (rand3dTo1d(structure_pos) > dominant_biome->tree_probab)
+							continue ;
 
-					WorldVec3i	structure_block_pos;
-					for (structure_block_pos.x = structure_pos.x - 2; structure_block_pos.x <= structure_pos.x + 2; structure_block_pos.x++)
-						for (structure_block_pos.z = structure_pos.z - 2; structure_block_pos.z <= structure_pos.z + 2; structure_block_pos.z++)
-							for (structure_block_pos.y = structure_pos.y + 4; structure_block_pos.y <= structure_pos.y + 8; structure_block_pos.y++)
-								_setBlockFromWorld(structure_block_pos, BLOCK_OAK_LEAVES);
-					structure_block_pos = structure_pos;
-					for (structure_block_pos.y = structure_pos.y; structure_block_pos.y <= structure_pos.y + 7; structure_block_pos.y++)
-						_setBlockFromWorld(structure_block_pos, BLOCK_OAK_LOG);
+						if (structure_pos.y <= WATER_LEVEL)
+							continue ;
 
+						WorldVec3i	structure_block_pos;
+						for (structure_block_pos.x = structure_pos.x - 2; structure_block_pos.x <= structure_pos.x + 2; structure_block_pos.x++)
+							for (structure_block_pos.z = structure_pos.z - 2; structure_block_pos.z <= structure_pos.z + 2; structure_block_pos.z++)
+								for (structure_block_pos.y = structure_pos.y + 4; structure_block_pos.y <= structure_pos.y + 8; structure_block_pos.y++)
+									_setBlockFromWorld(structure_block_pos, BLOCK_OAK_LEAVES);
+						structure_block_pos = structure_pos;
+						for (structure_block_pos.y = structure_pos.y; structure_block_pos.y <= structure_pos.y + 7; structure_block_pos.y++)
+							_setBlockFromWorld(structure_block_pos, BLOCK_OAK_LOG);
+					}
 				}
 	}
 

@@ -7,7 +7,7 @@ struct	PlainsBiome : public Biome
 	PlainsBiome()
 	: Biome(Range(0.1, 0.7), Range(0, 1), Range(0, 0), Range(-1, 0.33), Range(0, 0))
 	{
-
+		tree_probab = 0.1;
 	}
 
 	float			get_height(const Vec2i &pos)
