@@ -34,6 +34,7 @@ using ChunkBlockStateId = 	uint16_t;
 #define BLOCK_AIR 0
 #define BLOCK_WATER 223
 #define BLOCK_ICE 67
+#define BLOCK_CACTUS 70
 #define BLOCK_CLAY 72
 
 #define BLOCK_ROSE 12

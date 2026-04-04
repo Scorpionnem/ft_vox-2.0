@@ -22,6 +22,7 @@ INCLUDE_DIRS :=	external/imgui/\
 				inc/Math/Mat\
 				inc/World\
 				inc/World/Block\
+				inc/World/Structures\
 				inc/World/Biomes\
 				inc/World/Biomes/Temperate\
 				inc/World/Biomes/Hot\

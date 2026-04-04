@@ -1,12 +1,16 @@
 #pragma once
 
 #include "Biome.hpp"
+#include "SmallOakTree.hpp"
+#include "BigOakTree.hpp"
 
 struct	ForestBiome : public Biome
 {
 	ForestBiome()
 	: Biome(Range(0.1, 0.7), Range(-1, 0), Range(0, 0), Range(-1, 0.33), Range(0, 0))
 	{
+		registerSurfaceFeature(0.067, new BigOakTree);
+		registerSurfaceFeature(1.0, new SmallOakTree);
 		tree_probab = 1;
 	}
 

@@ -1,13 +1,16 @@
 #pragma once
 
 #include "Biome.hpp"
+#include "Cactus.hpp"
+#include "DesertPyramid.hpp"
 
 struct	DesertBiome : public Biome
 {
 	DesertBiome()
 	: Biome(Range(0.1, 0.75), Range(-1, 1), Range(0, 0), Range(0.33, 1), Range(0, 0))
 	{
-
+		registerSurfaceFeature(0.2, new Cactus);
+		registerStructure(0.5, new DesertPyramid);
 	}
 
 	float			get_height(const Vec2i &pos)

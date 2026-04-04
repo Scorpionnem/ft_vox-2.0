@@ -189,20 +189,13 @@ void	Chunk::_generateFeatures()
 
 					structure_pos.y = max_height;
 
-					if (rand3dTo1d(structure_pos) > dominant_biome->tree_probab)
+					Structure	*feat = dominant_biome->get_surface_feature(structure_pos);
+					if (!feat)
 						continue ;
 
-					if (structure_pos.y <= WATER_LEVEL)
-						continue ;
-
-					WorldVec3i	structure_block_pos;
-					for (structure_block_pos.x = structure_pos.x - 2; structure_block_pos.x <= structure_pos.x + 2; structure_block_pos.x++)
-						for (structure_block_pos.z = structure_pos.z - 2; structure_block_pos.z <= structure_pos.z + 2; structure_block_pos.z++)
-							for (structure_block_pos.y = structure_pos.y + 4; structure_block_pos.y <= structure_pos.y + 8; structure_block_pos.y++)
-								_setBlockFromWorld(structure_block_pos, BLOCK_OAK_LEAVES);
-					structure_block_pos = structure_pos;
-					for (structure_block_pos.y = structure_pos.y; structure_block_pos.y <= structure_pos.y + 7; structure_block_pos.y++)
-						_setBlockFromWorld(structure_block_pos, BLOCK_OAK_LOG);
+					auto blocks = feat->generate(structure_pos);
+					for (auto b : blocks)
+						_setBlockFromWorld(b.pos, b.block);
 				}
 			}
 }
@@ -227,8 +220,32 @@ void	Chunk::_generateStructures()
 		for (region_pos.z = cur_region_pos.z - 1; region_pos.z <= cur_region_pos.z + 1; region_pos.z++)
 			for (region_pos.y = cur_region_pos.y - 1; region_pos.y <= cur_region_pos.y + 1; region_pos.y++)
 			{
-				#define STRUCTURES_PER_REGION 8
-				for (int i = 0; i < STRUCTURES_PER_REGION; i++)
+				#define ANY_STRUCTURES_PER_REGION 8
+				for (int i = 0; i < ANY_STRUCTURES_PER_REGION; i++)
+				{
+					RegionWorldVec3i	gen_region_pos = Vec3i(region_pos.x, region_pos.y, region_pos.z);
+					RegionWorldVec3i	spiced_gen_region_pos = Vec3i(region_pos.x + i, region_pos.y + i, region_pos.z + i);
+					WorldVec3i			structure_pos = regionLocalToWorld(rand3dTo3d(spiced_gen_region_pos) * REGION_SIZE, gen_region_pos, REGION_SIZE);
+
+					std::shared_ptr<Biome>	dominant_biome;
+					float					max_height;
+					Biome::get_biome(Vec2i(structure_pos.x, structure_pos.z), dominant_biome, max_height);
+
+					Structure	*feat = dominant_biome->get_structure(structure_pos);
+					if (!feat || feat) // TODO REMOVE TO HAVE FLYING STRUCTURES AND SHI
+						continue ;
+
+					// maximum size of the structure
+					int	STRUCTURE_SIZE = 64;
+					if (!is_inside(_pos * CHUNK_SIZE, CHUNK_SIZE, structure_pos - STRUCTURE_SIZE, REGION_SIZE))
+						continue ;
+
+					auto blocks = feat->generate(structure_pos);
+					for (auto b : blocks)
+						_setBlockFromWorld(b.pos, b.block);
+				}
+				#define SURFACE_STRUCTURES_PER_REGION 8
+				for (int i = 0; i < ANY_STRUCTURES_PER_REGION; i++)
 				{
 					RegionWorldVec3i	gen_region_pos = Vec3i(region_pos.x, 0, region_pos.z);
 					RegionWorldVec3i	spiced_gen_region_pos = Vec3i(region_pos.x + i, 0, region_pos.z + i);
@@ -238,33 +255,20 @@ void	Chunk::_generateStructures()
 					float					max_height;
 					Biome::get_biome(Vec2i(structure_pos.x, structure_pos.z), dominant_biome, max_height);
 
+					structure_pos.y = max_height;
+
+					Structure	*feat = dominant_biome->get_structure(structure_pos);
+					if (!feat)
+						continue ;
+
 					// maximum size of the structure
-					int	STRUCTURE_SIZE = 32;
+					int	STRUCTURE_SIZE = 64;
 					if (!is_inside(_pos * CHUNK_SIZE, CHUNK_SIZE, structure_pos - STRUCTURE_SIZE, REGION_SIZE))
 						continue ;
 
-					// if (rand3dTo1d(structure_pos) > dominant_biome->tree_probab)
-					// 	continue ;
-
-					// if (structure_pos.y <= WATER_LEVEL)
-					// 	continue ;
-
-					#define CUBE_SIZE 32
-					WorldVec3i	structure_block_pos;
-					for (structure_block_pos.y = structure_pos.y - CUBE_SIZE / 2; structure_block_pos.y < structure_pos.y + CUBE_SIZE / 2; structure_block_pos.y++)
-						for (structure_block_pos.x = structure_pos.x - CUBE_SIZE / 2; structure_block_pos.x < structure_pos.x + CUBE_SIZE / 2; structure_block_pos.x++)
-							for (structure_block_pos.z = structure_pos.z - CUBE_SIZE / 2; structure_block_pos.z < structure_pos.z + CUBE_SIZE / 2; structure_block_pos.z++)
-							{
-								if (structure_block_pos.x == (structure_pos.x + CUBE_SIZE / 2) - 1
-									|| structure_block_pos.y == (structure_pos.y + CUBE_SIZE / 2) - 1
-									|| structure_block_pos.z == (structure_pos.z + CUBE_SIZE / 2) - 1
-									|| structure_block_pos.x == structure_pos.x - CUBE_SIZE / 2
-									|| structure_block_pos.y == structure_pos.y - CUBE_SIZE / 2
-									|| structure_block_pos.z == structure_pos.z - CUBE_SIZE / 2)
-									_setBlockFromWorld(structure_block_pos, BLOCK_BRICKS);
-								else
-									_setBlockFromWorld(structure_block_pos, BLOCK_AIR);
-							}
+					auto blocks = feat->generate(structure_pos);
+					for (auto b : blocks)
+						_setBlockFromWorld(b.pos, b.block);
 				}
 			}
 }
