@@ -64,11 +64,20 @@ IMGUI_SRCS = $(addprefix $(IMGUI)/, $(IMGUI_SRCS_RAW))
 
 SRCS +=	$(IMGUI_SRCS)
 
-
 OBJ_DIR :=	obj
 OBJS =	$(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 DEPS =	$(SRCS:%.cpp=$(OBJ_DIR)/%.d)
 
+TPUT 					= tput -T xterm-256color
+_RESET 					:= $(shell $(TPUT) sgr0)
+_BOLD 					:= $(shell $(TPUT) bold)
+_ITALIC 				:= $(shell $(TPUT) sitm)
+_UNDER 					:= $(shell $(TPUT) smul)
+_GREEN 					:= $(shell $(TPUT) setaf 2)
+_YELLOW 				:= $(shell $(TPUT) setaf 3)
+_RED 					:= $(shell $(TPUT) setaf 1)
+_GRAY 					:= $(shell $(TPUT) setaf 8)
+_PURPLE 				:= $(shell $(TPUT) setaf 5)
 
 compile: imgui glad stb_image
 	@make -j all --no-print-directory
@@ -110,8 +119,8 @@ stb_image: $(EXTERNAL_DIR)
 
 glad: $(EXTERNAL_DIR)
 	@if ls external | grep -q "glad"; then\
-  		printf "";\
-  	else \
+		printf "";\
+	else \
 		echo "\033[31;1mDownloading glad\033[0m";\
 		mkdir $(EXTERNAL_DIR)/glad;\
 		cd $(EXTERNAL_DIR)/glad;\
@@ -124,25 +133,23 @@ glad: $(EXTERNAL_DIR)
 	fi
 
 $(NAME): $(OBJS)
-	@echo Compiling $(NAME)
-	@$(CXX) $(CXXFLAGS) $(LFLAGS) $(INCLUDE_DIRS) -o $@ $^
-	@echo Compiled $(NAME)
+	@echo 'Linking $(_BOLD)$(NAME)$(_RESET)'
+	@/bin/time --format='$(_GREEN)(%Us)$(_RESET) Linked $(_BOLD)$(NAME)$(_RESET)' $(CXX) $(CXXFLAGS) $(LFLAGS) $(INCLUDE_DIRS) -o $@ $^
 
 $(OBJ_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
-	@echo Compiling $<
-	@$(CXX) $(CXXFLAGS) $(INCLUDE_DIRS) -c $< -o $@
-	@echo Compiled $@
+	@echo 'Compiling $(_BOLD)$<$(_RESET)'
+	@/bin/time --format='$(_GREEN)(%Us)$(_RESET) Compiled $(_BOLD)$@$(_RESET)' $(CXX) $(CXXFLAGS) $(INCLUDE_DIRS) -c $< -o $@
 
 re: fclean compile
 
 fclean: clean
-	@echo Removed $(NAME)
+	@echo 'Removed $(_BOLD)$(NAME)$(_RESET)'
 	@rm -rf $(NAME)
 
 clean:
-	@echo Removed $(OBJ_DIR)
-	@echo Removed $(BUILD_DIR)
+	@echo 'Removed $(_BOLD)$(OBJ_DIR)$(_RESET)'
+	@echo 'Removed $(_BOLD)$(BUILD_DIR)$(_RESET)'
 	@rm -rf $(OBJ_DIR)
 	@rm -rf $(BUILD_DIR)
 
