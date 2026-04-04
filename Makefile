@@ -86,7 +86,7 @@ build:
 	@/bin/time --format='$(_GREEN)(%es)$(_RESET) Done' make timed_build --no-print-directory
 
 timed_all:
-	@make clone_dependencies --no-print-directory --silent
+	@make -j clone_dependencies --no-print-directory --silent
 	@make -j compile --no-print-directory --silent
 
 clone_dependencies: imgui glad stb_image
