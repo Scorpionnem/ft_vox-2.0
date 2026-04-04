@@ -477,7 +477,7 @@ void	Chunk::save(const std::string &path)
 
 	file.open(path, std::ios::binary);
 	if (!file.is_open())
-		throw std::runtime_error("chunk failed to open " + path);
+		throw std::runtime_error("chunk saving: failed to open " + path);
 
 	Chunk::Header	hdr;
 
@@ -494,21 +494,21 @@ void	Chunk::load(const std::string &path)
 
 	file.open(path, std::ios::binary);
 	if (!file.is_open())
-		throw std::runtime_error("chunk failed to open " + path);
+		throw std::runtime_error("chunk loading: failed to open " + path);
 
 	struct stat	s;
 	stat(path.c_str(), &s);
 	if (s.st_size != sizeof(Chunk::Header) + CHUNK_VOLUME * sizeof(ChunkBlockStateId))
-		throw std::runtime_error("Invalid save file size");
+		throw std::runtime_error("chunk loading: invalid save file size");
 
 	Chunk::Header	hdr;
 
 	file.read(reinterpret_cast<char*>(&hdr), sizeof(Chunk::Header));
 
 	if (memcmp(hdr.magic, CHUNK_HEADER_MAGIC, CHUNK_HEADER_MAGIC_SIZE))
-		throw std::runtime_error("Invalid chunk header magic");
+		throw std::runtime_error("chunk loading: invalid chunk header magic");
 	if (hdr.size != CHUNK_SIZE)
-		throw std::runtime_error("Invalid chunk size");
+		throw std::runtime_error("chunk loading: invalid chunk size");
 
 	_blocks.resize(CHUNK_VOLUME);
 

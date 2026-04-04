@@ -66,11 +66,7 @@ class	Chunk
 			_world = world;
 			_pos = pos;
 		}
-		~Chunk()
-		{
-			if (_edited)
-				save(get_chunk_path(_pos));
-		}
+		~Chunk() {}
 
 		static std::string	get_chunk_path(const ChunkWorldVec3i &pos)
 		{
@@ -124,6 +120,10 @@ class	Chunk
 		void	set_edited()
 		{
 			_edited = true;
+		}
+		bool	edited()
+		{
+			return (_edited);
 		}
 		bool	check = true; // TODO Remove ts
 	private:

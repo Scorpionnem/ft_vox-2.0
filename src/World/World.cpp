@@ -49,7 +49,11 @@ void	World::update(ThreadPool &genThreads, double delta)
 		std::shared_ptr<Chunk>	chunk = it->second;
 
 		if (!chunk->check)
+		{
+			if (chunk->edited())
+				chunk->save(chunk->get_chunk_path(chunk->pos()));
 			it = _chunks.erase(it);
+		}
 		else
 			it++;
 	}
