@@ -23,6 +23,8 @@ struct	ShallowOceanBiome : public Biome
 	{
 		if (pos.y <= WATER_LEVEL && pos.y > world_height)
 			return (BLOCK_WATER);
+		if (pos.y == WATER_LEVEL + 1 && rand2dTo1d(Vec2f(pos.x, pos.z)) <= 0.005)
+			return (BLOCK_LILYPAD);
 		if (pos.y > world_height)
 			return (BLOCK_AIR);
 		if (pos.y == world_height)

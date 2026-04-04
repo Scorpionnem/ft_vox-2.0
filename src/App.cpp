@@ -93,8 +93,8 @@ extern std::vector<std::shared_ptr<Biome>>	ALL_BIOMES;
 void	App::_loop(void)
 {
 	_cam.pos.x = 0;
+	_cam.pos.y = 120;
 	_cam.pos.z = 0;
-	_cam.pos.y = 130;
 
 	bool	showDebug = false;
 	float	fog_power = 4;

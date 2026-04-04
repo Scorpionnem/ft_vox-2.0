@@ -96,12 +96,16 @@ class	Chunk
 
 		inline ChunkBlockStateId	getBlock(const ChunkLocalVec3i &pos)
 		{
+			std::unique_lock<std::mutex>	lock(_chunkMutex);
+
 			if (!_isInBounds(pos))
 				throw std::runtime_error("getblock out of bounds");
-			return (_blocks[_getBlockIndex(pos)]);
+			return (_getBlock(pos));
 		}
 		inline void	setBlock(const ChunkLocalVec3i &pos, ChunkBlockStateId block)
 		{
+			std::unique_lock<std::mutex>	lock(_chunkMutex);
+
 			if (!_isInBounds(pos))
 				throw std::runtime_error("setblock out of bounds");
 
@@ -144,6 +148,10 @@ class	Chunk
 
 		float							_spawn_fade = 0;
 	private:
+		inline ChunkBlockStateId	_getBlock(const ChunkLocalVec3i &pos)
+		{
+			return (_blocks[_getBlockIndex(pos)]);
+		}
 		inline void	_setBlock(const ChunkLocalVec3i &pos, ChunkBlockStateId block)
 		{
 			ChunkBlockStateId	&b = _blocks[_getBlockIndex(pos)];

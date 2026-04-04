@@ -147,6 +147,100 @@ constexpr const Face GRASS_FACES[8] =
 	),
 };
 
+constexpr const Face CACTUS_FACES[12] =
+{
+	Face( // NORTH
+		Vertex(Vec3f(0, 0, 0.9375), Vec3f(0,0,1), UV00),
+		Vertex(Vec3f(1, 0, 0.9375), Vec3f(0,0,1), UV10),
+		Vertex(Vec3f(1, 1, 0.9375), Vec3f(0,0,1), UV11)
+	),
+	Face( // NORTH
+		Vertex(Vec3f(0, 0, 0.9375), Vec3f(0,0,1), UV00),
+		Vertex(Vec3f(1, 1, 0.9375), Vec3f(0,0,1), UV11),
+		Vertex(Vec3f(0, 1, 0.9375), Vec3f(0,0,1), UV01)
+	),
+
+	Face( // EAST
+		Vertex(Vec3f(0.9375, 1, 1), Vec3f(1,0,0), UV11),
+		Vertex(Vec3f(0.9375, 0, 1), Vec3f(1,0,0), UV10),
+		Vertex(Vec3f(0.9375, 0, 0), Vec3f(1,0,0), UV00)
+	),
+	Face( // EAST
+		Vertex(Vec3f(0.9375, 1, 0), Vec3f(1,0,0), UV01),
+		Vertex(Vec3f(0.9375, 1, 1), Vec3f(1,0,0), UV11),
+		Vertex(Vec3f(0.9375, 0, 0), Vec3f(1,0,0), UV00)
+	),
+
+	Face( // WEST
+		Vertex(Vec3f(0.0625, 1, 0), Vec3f(-1,0,0), UV11),
+		Vertex(Vec3f(0.0625, 0, 0), Vec3f(-1,0,0), UV10),
+		Vertex(Vec3f(0.0625, 0, 1), Vec3f(-1,0,0), UV00)
+	),
+	Face( // WEST
+		Vertex(Vec3f(0.0625, 1, 1), Vec3f(-1,0,0), UV01),
+		Vertex(Vec3f(0.0625, 1, 0), Vec3f(-1,0,0), UV11),
+		Vertex(Vec3f(0.0625, 0, 1), Vec3f(-1,0,0), UV00)
+	),
+
+	Face( // SOUTH
+		Vertex(Vec3f(1, 1, 0.0625), Vec3f(0,0,-1), UV11),
+		Vertex(Vec3f(1, 0, 0.0625), Vec3f(0,0,-1), UV10),
+		Vertex(Vec3f(0, 0, 0.0625), Vec3f(0,0,-1), UV00)
+	),
+	Face( // SOUTH
+		Vertex(Vec3f(0, 1, 0.0625), Vec3f(0,0,-1), UV01),
+		Vertex(Vec3f(1, 1, 0.0625), Vec3f(0,0,-1), UV11),
+		Vertex(Vec3f(0, 0, 0.0625), Vec3f(0,0,-1), UV00)
+	),
+
+	Face( // TOP
+		Vertex(V2, Vec3f(0,1,0), UV11),
+		Vertex(V3, Vec3f(0,1,0), UV10),
+		Vertex(V4, Vec3f(0,1,0), UV00)
+	),
+	Face( // TOP
+		Vertex(V1, Vec3f(0,1,0), UV01),
+		Vertex(V2, Vec3f(0,1,0), UV11),
+		Vertex(V4, Vec3f(0,1,0), UV00)
+	),
+
+	Face( // BOTTOM
+		Vertex(V8, Vec3f(0,-1,0), UV01),
+		Vertex(V6, Vec3f(0,-1,0), UV10),
+		Vertex(V5, Vec3f(0,-1,0), UV00)
+	),
+	Face( // BOTTOM
+		Vertex(V8, Vec3f(0,-1,0), UV01),
+		Vertex(V7, Vec3f(0,-1,0), UV11),
+		Vertex(V6, Vec3f(0,-1,0), UV10)
+	),
+};
+
+constexpr const Face LILYPAD_FACES[4] =
+{
+	Face( // TOP
+		Vertex(Vec3f(1, 0.0625, 1), Vec3f(0,1,0), UV11),
+		Vertex(Vec3f(1, 0.0625, 0), Vec3f(0,1,0), UV10),
+		Vertex(Vec3f(0, 0.0625, 0), Vec3f(0,1,0), UV00)
+	),
+	Face( // TOP
+		Vertex(Vec3f(0, 0.0625, 1), Vec3f(0,1,0), UV01),
+		Vertex(Vec3f(1, 0.0625, 1), Vec3f(0,1,0), UV11),
+		Vertex(Vec3f(0, 0.0625, 0), Vec3f(0,1,0), UV00)
+	),
+
+	Face( // BOTTOM
+		Vertex(Vec3f(0, 0.0625, 0), Vec3f(0,-1,0), UV01),
+		Vertex(Vec3f(1, 0.0625, 1), Vec3f(0,-1,0), UV10),
+		Vertex(Vec3f(0, 0.0625, 1), Vec3f(0,-1,0), UV00)
+	),
+	Face( // BOTTOM
+		Vertex(Vec3f(0, 0.0625, 0), Vec3f(0,-1,0), UV01),
+		Vertex(Vec3f(1, 0.0625, 0), Vec3f(0,-1,0), UV11),
+		Vertex(Vec3f(1, 0.0625, 1), Vec3f(0,-1,0), UV10)
+	),
+};
+
 #define TEX_SIZE 16
 #define ATLAS_SIZE 256
 static Vec2f	getAtlasUV(Vec2f uv, int textureId)
@@ -368,17 +462,17 @@ void	Chunk::mesh()
 				if (!_isInBounds(blockPos))
 					continue ;
 
-				BlockStateId	block = getBlock(blockPos);
+				BlockStateId	block = _getBlock(blockPos);
 
 				if (block != BLOCK_AIR)
 				{
-					if (block == BLOCK_TALL_GRASS || block == BLOCK_DEAD_BUSH || block == BLOCK_ROSE || block == BLOCK_DANDELION)
+					if (block == BLOCK_TALL_GRASS || block == BLOCK_DEAD_BUSH || block == BLOCK_ROSE || block == BLOCK_DANDELION || block == BLOCK_SUGARCANE)
 					{
 						for (auto face : GRASS_FACES)
 						{
-							face.v1.pos = blockPos + face.v1.pos;
-							face.v2.pos = blockPos + face.v2.pos;
-							face.v3.pos = blockPos + face.v3.pos;
+							face.v1.pos = (Vec3f)blockPos + face.v1.pos;
+							face.v2.pos = (Vec3f)blockPos + face.v2.pos;
+							face.v3.pos = (Vec3f)blockPos + face.v3.pos;
 
 							face.v1.uv = getAtlasUV(face.v1.uv, block);
 							face.v2.uv = getAtlasUV(face.v2.uv, block);
@@ -388,6 +482,55 @@ void	Chunk::mesh()
 
 							if (block == BLOCK_TALL_GRASS) // Is grass / leaves and all
 								color = Vec3f(0.05, 0.55, 0.05);
+
+							face.v1.color = color;
+							face.v2.color = color;
+							face.v3.color = color;
+
+							_solid_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&face), sizeof(face));
+						}
+						continue ;
+					}
+
+					if (block == BLOCK_CACTUS)
+					{
+						int	i = 0;
+						for (auto face : CACTUS_FACES)
+						{
+							i++;
+
+							face.v1.pos = (Vec3f)blockPos + face.v1.pos;
+							face.v2.pos = (Vec3f)blockPos + face.v2.pos;
+							face.v3.pos = (Vec3f)blockPos + face.v3.pos;
+
+							face.v1.uv = getAtlasUV(face.v1.uv, block - ((i == 9 || i == 10) ? 1 : 0) + ((i == 11 || i == 12) ? 1 : 0));
+							face.v2.uv = getAtlasUV(face.v2.uv, block - ((i == 9 || i == 10) ? 1 : 0) + ((i == 11 || i == 12) ? 1 : 0));
+							face.v3.uv = getAtlasUV(face.v3.uv, block - ((i == 9 || i == 10) ? 1 : 0) + ((i == 11 || i == 12) ? 1 : 0));
+
+							Vec3f	color(1);
+
+							face.v1.color = color;
+							face.v2.color = color;
+							face.v3.color = color;
+
+							_solid_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&face), sizeof(face));
+						}
+						continue ;
+					}
+
+					if (block == BLOCK_LILYPAD)
+					{
+						for (auto face : LILYPAD_FACES)
+						{
+							face.v1.pos = (Vec3f)blockPos + face.v1.pos;
+							face.v2.pos = (Vec3f)blockPos + face.v2.pos;
+							face.v3.pos = (Vec3f)blockPos + face.v3.pos;
+
+							face.v1.uv = getAtlasUV(face.v1.uv, block);
+							face.v2.uv = getAtlasUV(face.v2.uv, block);
+							face.v3.uv = getAtlasUV(face.v3.uv, block);
+
+							Vec3f	color(0.05, 0.55, 0.05);
 
 							face.v1.color = color;
 							face.v2.color = color;
@@ -409,20 +552,20 @@ void	Chunk::mesh()
 							continue ;
 
 						if (_isInBounds(thisChunkPos))
-							cull_block = getBlock(thisChunkPos);
+							cull_block = _getBlock(thisChunkPos);
 						else if (neighbours[dir]->_isInBounds(neighbourChunkPos))
-							cull_block = neighbours[dir]->getBlock(neighbourChunkPos);
+							cull_block = neighbours[dir]->_getBlock(neighbourChunkPos);
 
-						if ((cull_block == BLOCK_AIR || cull_block == BLOCK_WATER || cull_block == BLOCK_ICE || cull_block == BLOCK_TALL_GRASS || cull_block == BLOCK_DEAD_BUSH || cull_block == BLOCK_ROSE || cull_block == BLOCK_DANDELION || cull_block == BLOCK_OAK_LEAVES) && (cull_block != block || block == BLOCK_OAK_LEAVES))
+						if ((cull_block == BLOCK_AIR || cull_block == BLOCK_WATER || cull_block == BLOCK_ICE || cull_block == BLOCK_TALL_GRASS || cull_block == BLOCK_DEAD_BUSH || cull_block == BLOCK_ROSE || cull_block == BLOCK_DANDELION || cull_block == BLOCK_OAK_LEAVES || cull_block == BLOCK_CACTUS || cull_block == BLOCK_SUGARCANE || cull_block == BLOCK_LILYPAD) && (cull_block != block || block == BLOCK_OAK_LEAVES))
 						{
 							Face	f1 = FACE1[dir];
 							Face	f2 = FACE2[dir];
-							f1.v1.pos = blockPos + f1.v1.pos;
-							f1.v2.pos = blockPos + f1.v2.pos;
-							f1.v3.pos = blockPos + f1.v3.pos;
-							f2.v1.pos = blockPos + f2.v1.pos;
-							f2.v2.pos = blockPos + f2.v2.pos;
-							f2.v3.pos = blockPos + f2.v3.pos;
+							f1.v1.pos = (Vec3f)blockPos + f1.v1.pos;
+							f1.v2.pos = (Vec3f)blockPos + f1.v2.pos;
+							f1.v3.pos = (Vec3f)blockPos + f1.v3.pos;
+							f2.v1.pos = (Vec3f)blockPos + f2.v1.pos;
+							f2.v2.pos = (Vec3f)blockPos + f2.v2.pos;
+							f2.v3.pos = (Vec3f)blockPos + f2.v3.pos;
 
 							int		atlasId = block;
 

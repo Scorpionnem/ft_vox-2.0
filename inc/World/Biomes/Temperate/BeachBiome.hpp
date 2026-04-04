@@ -1,13 +1,14 @@
 #pragma once
 
 #include "Biome.hpp"
+#include "Sugarcane.hpp"
 
 struct	BeachBiome : public Biome
 {
 	BeachBiome()
 	: Biome(Range(0.00, 0.1), Range(0, 1), Range(0, 0), Range(-1, 1), Range(0, 0))
 	{
-
+		registerSurfaceFeature(0.2, new Sugarcane);
 	}
 
 	float			get_height(const Vec2i &pos)
