@@ -2,7 +2,11 @@
 
 #include "Biome.hpp"
 
-float smoothstep(float edge0, float edge1, float x);
+inline float smoothstep(float edge0, float edge1, float x)
+{
+	float t = std::clamp((x - edge0) / (edge1 - edge0), 0.0f, 1.0f);
+	return (t * t * (3.0 - 2.0 * t));
+}
 
 struct	MesaBiome : public Biome
 {

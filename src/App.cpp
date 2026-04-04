@@ -48,9 +48,14 @@ void	App::_cast_ray(const Window::Events &events)
 
 	if (_ray_hit)
 	{
+		Mat4f	model = translate<float>(_ray_hit_pos);
+		model = model * translate<float>(Vec3f(0.5));
+		model = model * scale<float>(Vec3f(1.002));
+		model = model * translate<float>(Vec3f(-0.5));
+
 		_selected_block_shader.use();
 		_selected_block_shader.setMat4f("view", _cam.getViewMatrix());
-		_selected_block_shader.setMat4f("model", translate<float>(_ray_hit_pos));
+		_selected_block_shader.setMat4f("model", model);
 		_selected_block_shader.setMat4f("proj", perspective<float>(90, events.getAspectRatio(), 0.1, 1000.0));
 		_cube_mesh.draw();
 
@@ -109,8 +114,6 @@ void	App::_loop(void)
 
 		updateCamera(_cam, events);
 
-		_cast_ray(events);
-
 		_world.setUpdateCenter(_cam.pos);
 		_world.update(_generation_threads, events.getDeltaTime());
 
@@ -147,6 +150,8 @@ void	App::_loop(void)
 				_cube_mesh.draw();
 			}
 		}
+
+		_cast_ray(events);
 
 		if (events.getKeyPressed(SDLK_F3))
 			showDebug = !showDebug;

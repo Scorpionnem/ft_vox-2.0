@@ -11,7 +11,8 @@ uniform sampler2D	atlas;
 
 void main()
 {
-	vec4	color = texture(atlas, vUv);
+	//texture(atlas, vUv)
+	vec4	color = vec4(vec3(1), 0.2);
 
 	outColor = color;
 }

@@ -153,6 +153,16 @@ class	Chunk
 				_non_air_blocks--;
 			b = block;
 		}
+		inline void	_setBlockFromWorld(const ChunkWorldVec3i &world_pos, ChunkBlockStateId block)
+		{
+			ChunkWorldVec3i	chunk_block_pos = worldToChunkWorld(world_pos, CHUNK_SIZE);
+
+			if (_pos == chunk_block_pos)
+			{
+				ChunkLocalVec3i	bp = worldToChunkLocal(world_pos, CHUNK_SIZE);
+				_setBlock(bp, block);
+			}
+		}
 		inline bool	_isInBounds(const ChunkLocalVec3i &pos)
 		{
 			return (pos.x >= 0 && pos.y >= 0 && pos.z >= 0 && pos.x < CHUNK_SIZE && pos.y < CHUNK_SIZE && pos.z < CHUNK_SIZE);

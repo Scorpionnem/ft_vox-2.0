@@ -15,81 +15,6 @@ constexpr const Vec3i	DIR_OFFSET[6] =
 	Vec3i(-1, 0, 0), // WEST
 };
 
-float smoothstep(float edge0, float edge1, float x)
-{
-	float t = std::clamp((x - edge0) / (edge1 - edge0), 0.0f, 1.0f);
-	return (t * t * (3.0 - 2.0 * t));
-}
-
-std::vector<std::shared_ptr<Biome>>	ALL_BIOMES;
-
-void	Chunk::generate(/*Generator *gen*/)
-{
-	if (try_load(get_chunk_path(_pos)))
-		_edited = true;
-	else
-	{
-		_blocks.resize(CHUNK_VOLUME);
-
-		ChunkLocalVec3i	pos;
-
-		std::vector<int>	height_map;
-		std::vector<std::shared_ptr<Biome>>	biome_map;
-
-		height_map.resize(CHUNK_SIZE * CHUNK_SIZE);
-		biome_map.resize(CHUNK_SIZE * CHUNK_SIZE);
-
-		for (pos.x = 0; pos.x < CHUNK_SIZE; pos.x++)
-			for (pos.z = 0; pos.z < CHUNK_SIZE; pos.z++)
-			{
-				WorldVec3i	wp = chunkLocalToWorld(pos, _pos, CHUNK_SIZE);
-
-				std::shared_ptr<Biome>	dominant_biome;
-				float					height;
-
-				Biome::get_biome(Vec2i(wp.x, wp.z), dominant_biome, height);
-
-				height_map[pos.x + pos.z * CHUNK_SIZE] = height;
-				biome_map[pos.x + pos.z * CHUNK_SIZE] = dominant_biome;
-			}
-
-		for (pos.x = 0; pos.x < CHUNK_SIZE; pos.x++)
-			for (pos.z = 0; pos.z < CHUNK_SIZE; pos.z++)
-				for (pos.y = 0; pos.y < CHUNK_SIZE; pos.y++)
-				{
-					WorldVec3i	wp = chunkLocalToWorld(pos, _pos, CHUNK_SIZE);
-
-					int	y = height_map[pos.x + pos.z * CHUNK_SIZE];
-
-					if (!biome_map[pos.x + pos.z * CHUNK_SIZE])
-						_setBlock(pos, BLOCK_BEDROCK);
-					else
-						_setBlock(pos, biome_map[pos.x + pos.z * CHUNK_SIZE]->get_block(wp, y));
-				}
-	}
-
-	_state = Chunk::State::GENERATED;
-
-	mesh_neighbours();
-
-	mesh();
-}
-
-#include <glad/glad.h>
-
-void	Chunk::upload()
-{
-	if (!_chunkMutex.try_lock())
-		return ;
-
-	_solid_mesh.upload();
-	_transparent_mesh.upload();
-
-	_state = Chunk::State::UPLOADED;
-
-	_chunkMutex.unlock();
-}
-
 constexpr const Vec2f	UV00(0.f, 0.f);
 constexpr const Vec2f	UV10(1.f, 0.f);
 constexpr const Vec2f	UV11(1.f, 1.f);
@@ -242,6 +167,90 @@ static Vec2f	getAtlasUV(Vec2f uv, int textureId)
 	return (atlasUV);
 }
 
+std::vector<std::shared_ptr<Biome>>	ALL_BIOMES;
+
+void	Chunk::generate(/*Generator *gen*/)
+{
+	if (try_load(get_chunk_path(_pos)))
+		_edited = true;
+	else
+	{
+		_blocks.resize(CHUNK_VOLUME);
+
+		ChunkLocalVec3i	pos;
+
+		for (pos.x = 0; pos.x < CHUNK_SIZE; pos.x++)
+			for (pos.z = 0; pos.z < CHUNK_SIZE; pos.z++)
+			{
+				WorldVec3i	wp = chunkLocalToWorld(pos, _pos, CHUNK_SIZE);
+
+				std::shared_ptr<Biome>	dominant_biome;
+				float					max_height;
+
+				Biome::get_biome(Vec2i(wp.x, wp.z), dominant_biome, max_height);
+
+				for (pos.y = 0; pos.y < CHUNK_SIZE; pos.y++)
+				{
+					WorldVec3i	wp = chunkLocalToWorld(pos, _pos, CHUNK_SIZE);
+
+					if (!dominant_biome)
+						_setBlock(pos, BLOCK_BEDROCK);
+					else
+						_setBlock(pos, dominant_biome->get_block(wp, max_height));
+				}
+			}
+
+		ChunkWorldVec3i	chunk_pos;
+		for (chunk_pos.x = _pos.x - 1; chunk_pos.x <= _pos.x + 1; chunk_pos.x++)
+			for (chunk_pos.z = _pos.z - 1; chunk_pos.z <= _pos.z + 1; chunk_pos.z++)
+				for (chunk_pos.y = _pos.y - 1; chunk_pos.y <= _pos.y + 1; chunk_pos.y++)
+				{
+					ChunkWorldVec3i	gen_chunk_pos = Vec3i(chunk_pos.x, 0, chunk_pos.z);
+					WorldVec3i	structure_pos = chunkLocalToWorld(rand3dTo3d(gen_chunk_pos) * CHUNK_SIZE, gen_chunk_pos, CHUNK_SIZE);
+
+					std::shared_ptr<Biome>	dominant_biome;
+					float					max_height;
+					Biome::get_biome(Vec2i(structure_pos.x, structure_pos.z), dominant_biome, max_height);
+
+					structure_pos.y = max_height;
+
+					if (structure_pos.y <= WATER_LEVEL)
+						continue ;
+
+					WorldVec3i	structure_block_pos;
+					for (structure_block_pos.x = structure_pos.x - 2; structure_block_pos.x <= structure_pos.x + 2; structure_block_pos.x++)
+						for (structure_block_pos.z = structure_pos.z - 2; structure_block_pos.z <= structure_pos.z + 2; structure_block_pos.z++)
+							for (structure_block_pos.y = structure_pos.y + 4; structure_block_pos.y <= structure_pos.y + 8; structure_block_pos.y++)
+								_setBlockFromWorld(structure_block_pos, BLOCK_OAK_LEAVES);
+					structure_block_pos = structure_pos;
+					for (structure_block_pos.y = structure_pos.y; structure_block_pos.y <= structure_pos.y + 7; structure_block_pos.y++)
+						_setBlockFromWorld(structure_block_pos, BLOCK_OAK_LOG);
+
+				}
+	}
+
+	_state = Chunk::State::GENERATED;
+
+	mesh_neighbours();
+
+	mesh();
+}
+
+#include <glad/glad.h>
+
+void	Chunk::upload()
+{
+	if (!_chunkMutex.try_lock())
+		return ;
+
+	_solid_mesh.upload();
+	_transparent_mesh.upload();
+
+	_state = Chunk::State::UPLOADED;
+
+	_chunkMutex.unlock();
+}
+
 void	Chunk::mesh_neighbours()
 {
 	for (int dir = 0; dir < 6; dir++)
@@ -321,7 +330,7 @@ void	Chunk::mesh()
 						else if (neighbours[dir]->_isInBounds(neighbourChunkPos))
 							cull_block = neighbours[dir]->getBlock(neighbourChunkPos);
 
-						if ((cull_block == BLOCK_AIR || cull_block == BLOCK_WATER || cull_block == BLOCK_ICE || cull_block == BLOCK_TALL_GRASS || cull_block == BLOCK_DEAD_BUSH || cull_block == BLOCK_ROSE || cull_block == BLOCK_DANDELION) && cull_block != block)
+						if ((cull_block == BLOCK_AIR || cull_block == BLOCK_WATER || cull_block == BLOCK_ICE || cull_block == BLOCK_TALL_GRASS || cull_block == BLOCK_DEAD_BUSH || cull_block == BLOCK_ROSE || cull_block == BLOCK_DANDELION || cull_block == BLOCK_OAK_LEAVES) && (cull_block != block || block == BLOCK_OAK_LEAVES))
 						{
 							Face	f1 = FACE1[dir];
 							Face	f2 = FACE2[dir];
@@ -335,7 +344,7 @@ void	Chunk::mesh()
 							int		atlasId = block;
 
 							Vec3f	random_color = 1;
-							if (block == BLOCK_GRASS) // Is grass / leaves and all
+							if (block == BLOCK_GRASS || block == BLOCK_OAK_LEAVES) // Is grass / leaves and all
 								random_color = Vec3f(0.05, 0.55, 0.05);
 
 							f2.v1.color = Vec3f(random_color);

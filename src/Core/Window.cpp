@@ -63,7 +63,7 @@ void	Window::open(const char *title, uint32_t width, uint32_t height)
 
 	glViewport(0, 0, _width, _height);
 
-	// SDL_GL_SetSwapInterval(1);
+	SDL_GL_SetSwapInterval(1);
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);

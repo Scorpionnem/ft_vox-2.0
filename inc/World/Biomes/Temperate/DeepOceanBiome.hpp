@@ -5,7 +5,7 @@
 struct	DeepOceanBiome : public Biome
 {
 	DeepOceanBiome()
-	: Biome(Range(-1, -0.7), Range(-1, 0), Range(0, 0), Range(-1, 1), Range(0, 0))
+	: Biome(Range(-1, -0.7), Range(-1, 1), Range(0, 0), Range(-1, 1), Range(0, 0))
 	{
 
 	}
