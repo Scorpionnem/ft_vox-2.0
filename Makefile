@@ -82,6 +82,9 @@ _PURPLE 				:= $(shell $(TPUT) setaf 5)
 all:
 	@/bin/time --format='$(_GREEN)(%es)$(_RESET) Done' make timed_all --no-print-directory
 
+build:
+	@/bin/time --format='$(_GREEN)(%es)$(_RESET) Done' make timed_build --no-print-directory
+
 timed_all:
 	@make clone_dependencies --no-print-directory --silent
 	@make -j compile --no-print-directory --silent
@@ -92,14 +95,16 @@ compile: $(NAME)
 
 BUILD_DIR := build/
 ASSETS_DIR := assets/
+PACK_NAME := ft_vox.tar.gz
 
-build: compile
-	@echo Packing build
+timed_build: timed_all
 	@mkdir -p $(BUILD_DIR)
+	@echo 'Copying $(_BOLD)$(NAME)$(_RESET) to $(_BOLD)$(BUILD_DIR)$(_RESET)'
 	@cp $(NAME) $(BUILD_DIR)
+	@echo 'Copying $(_BOLD)$(ASSETS_DIR)$(_RESET) to $(_BOLD)$(BUILD_DIR)$(_RESET)'
 	@cp -r $(ASSETS_DIR) $(BUILD_DIR)
-	@cd $(BUILD_DIR) ; tar -czf ft_vox.tar.gz $(NAME) $(ASSETS_DIR)
-	@echo Finished packing build
+	@echo 'Packing $(_BOLD)$(PACK_NAME)$(_RESET)'
+	@/bin/time --format='$(_GREEN)(%es)$(_RESET) Finished packing $(_BOLD)$(PACK_NAME)$(_RESET)' tar --directory=$(BUILD_DIR) -czf $(BUILD_DIR)$(PACK_NAME) $(NAME) $(ASSETS_DIR)
 
 $(EXTERNAL_DIR):
 	@mkdir -p external
@@ -159,6 +164,6 @@ clean:
 	@rm -rf $(OBJ_DIR)
 	@rm -rf $(BUILD_DIR)
 
-.PHONY: all clean fclean re compile
+.PHONY: all clean fclean re compile build external
 
 -include $(DEPS)
