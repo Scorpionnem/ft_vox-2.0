@@ -288,7 +288,7 @@ void	Chunk::_generateFeatures()
 						continue ;
 
 					auto blocks = feat->generate(structure_pos);
-					for (auto b : blocks)
+					for (auto &b : blocks)
 						_setBlockFromWorld(b.pos, b.block);
 				}
 			}
@@ -335,7 +335,7 @@ void	Chunk::_generateStructures()
 						continue ;
 
 					auto blocks = feat->generate(structure_pos);
-					for (auto b : blocks)
+					for (auto &b : blocks)
 						_setBlockFromWorld(b.pos, b.block);
 				}
 				#define SURFACE_STRUCTURES_PER_REGION 8
@@ -361,7 +361,7 @@ void	Chunk::_generateStructures()
 						continue ;
 
 					auto blocks = feat->generate(structure_pos);
-					for (auto b : blocks)
+					for (auto &b : blocks)
 						_setBlockFromWorld(b.pos, b.block);
 				}
 			}
@@ -603,14 +603,14 @@ void	Chunk::mesh()
 	_state = Chunk::State::MESHED;
 }
 
-void	Chunk::draw(Shader &shader)
+void	Chunk::draw(Shader &shader, Vec3d cam_pos)
 {
 	if (_state < Chunk::State::UPLOADED)
 		upload();
 
 	shader.use();
 
-	shader.setMat4f("model", translate<float>(_pos * CHUNK_SIZE));
+	shader.setMat4f("model", translate<float>(Vec3d(_pos * CHUNK_SIZE) - cam_pos));
 	shader.setFloat("spawn_fade", SPAWN_FADE_TIME == 0 ? 1 : _spawn_fade / SPAWN_FADE_TIME);
 
 	_solid_mesh.draw();
@@ -659,10 +659,6 @@ void	Chunk::load(const std::string &path)
 	_blocks.resize(CHUNK_VOLUME);
 
 	file.read(reinterpret_cast<char*>(_blocks.data()), CHUNK_VOLUME * sizeof(ChunkBlockStateId));
-
-	for (auto b : _blocks)
-		if (b != BLOCK_AIR)
-			_non_air_blocks++;
 }
 
 bool	Chunk::try_load(const std::string &path)

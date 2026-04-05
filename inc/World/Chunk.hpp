@@ -85,7 +85,7 @@ class	Chunk
 		void	generate(/*Generator *gen*/);
 		void	mesh();
 		void	mesh_neighbours();
-		void	draw(Shader &shader);
+		void	draw(Shader &shader, Vec3d cam_pos);
 		void	upload();
 
 		/* Saves chunk data in a binary file (Only blocks) */
@@ -116,9 +116,9 @@ class	Chunk
 
 		Chunk::State	state() {return (_state);}
 		ChunkWorldVec3i	pos() {return (_pos);}
-		bool			has_solid_blocks()
+		bool			has_visible_faces()
 		{
-			return (_non_air_blocks != 0);
+			return (_solid_mesh.drawn_triangles() != 0 || _transparent_mesh.drawn_triangles() != 0);
 		}
 
 		void	set_edited()
@@ -138,8 +138,6 @@ class	Chunk
 		ChunkWorldVec3i					_pos;
 		std::vector<ChunkBlockStateId>	_blocks;
 
-		uint16_t						_non_air_blocks = 0;
-
 		Mesh							_solid_mesh;
 		Mesh							_transparent_mesh;
 
@@ -155,10 +153,6 @@ class	Chunk
 		{
 			ChunkBlockStateId	&b = _blocks[_getBlockIndex(pos)];
 
-			if (b == 0 && block != 0)
-				_non_air_blocks++;
-			else if (b != 0 && block == 0)
-				_non_air_blocks--;
 			b = block;
 		}
 		inline void	_setBlockFromWorld(const ChunkWorldVec3i &world_pos, ChunkBlockStateId block)

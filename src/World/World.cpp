@@ -20,7 +20,7 @@ void	World::update(ThreadPool &genThreads, double delta)
 
 	std::vector<std::shared_ptr<Chunk>>	chunks_to_gen;
 
-	for (auto [hash, chunk] : _chunks)
+	for (auto &[hash, chunk] : _chunks)
 		chunk->check = false;
 
 	ChunkWorldVec3i	chunkPos;
@@ -86,10 +86,10 @@ std::vector<std::shared_ptr<Chunk>>	World::getVision(const Camera &cam, const Ve
 			{
 				std::shared_ptr<Chunk>	chunk = getChunk(chunkPos);
 
-				if (chunk == nullptr || chunk->state() < Chunk::State::MESHED || !chunk->has_solid_blocks())
+				if (chunk == nullptr || chunk->state() < Chunk::State::MESHED || !chunk->has_visible_faces())
 					continue ;
 
-				if (cam.frustum.isInside(Vec3(chunk->pos() * CHUNK_SIZE), Vec3(chunk->pos() * CHUNK_SIZE + CHUNK_SIZE)))
+				if (cam.frustum.isInside(Vec3(chunk->pos() * CHUNK_SIZE) - cam.pos, Vec3(chunk->pos() * CHUNK_SIZE + CHUNK_SIZE)  - cam.pos))
 					res.push_back(chunk);
 			}
 

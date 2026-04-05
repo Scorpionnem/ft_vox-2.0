@@ -6,7 +6,7 @@
 /*   By: mbatty <mbatty@student.42angouleme.fr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/07 16:08:20 by mbatty            #+#    #+#             */
-/*   Updated: 2026/04/05 11:40:58 by mbatty           ###   ########.fr       */
+/*   Updated: 2026/04/05 12:47:49 by mbatty           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,12 +18,12 @@ void	Camera::imgui(void)
 {
 	if (ImGui::Begin("Camera", (bool *)__null))
 	{
-		ImGui::InputFloat("X", &pos.x);
-		ImGui::InputFloat("Y", &pos.y);
-		ImGui::InputFloat("Z", &pos.z);
+		ImGui::InputDouble("X", &pos.x);
+		ImGui::InputDouble("Y", &pos.y);
+		ImGui::InputDouble("Z", &pos.z);
 
-		ImGui::InputFloat("Pitch", &pitch);
-		ImGui::InputFloat("Yaw", &yaw);
+		ImGui::InputDouble("Pitch", &pitch);
+		ImGui::InputDouble("Yaw", &yaw);
 		ImGui::InputInt("FOV", &fov);
 		fov = std::clamp(fov, 1, 120);
 		ImGui::Text("Speed: %.3f", speed);

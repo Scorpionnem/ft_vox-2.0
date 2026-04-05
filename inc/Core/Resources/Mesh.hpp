@@ -82,6 +82,14 @@ class	Mesh
 			glBindVertexArray(_VAO);
 			glDrawArrays(GL_TRIANGLES, 0, _uploaded_triangles);
 			glBindVertexArray(0);
+
+			extern uint64_t	DRAW_CALLS;
+			DRAW_CALLS++;
+		}
+
+		uint64_t	drawn_triangles()
+		{
+			return (std::max(_triangles, _uploaded_triangles));
 		}
 	private:
 		uint32_t				_VAO = 0;

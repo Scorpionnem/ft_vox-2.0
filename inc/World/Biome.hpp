@@ -104,7 +104,7 @@ struct	Biome
 				w = exp(-w * sharpness);
 
 			float total = 0.0f;
-			for (auto [w, b] : biome_weights)
+			for (auto &[w, b] : biome_weights)
 				total += w;
 			for (auto &[w, b] : biome_weights)
 				w /= total;
