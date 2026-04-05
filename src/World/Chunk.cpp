@@ -605,6 +605,9 @@ void	Chunk::mesh()
 
 void	Chunk::draw(Shader &shader)
 {
+	if (_state < Chunk::State::UPLOADED)
+		upload();
+
 	shader.use();
 
 	shader.setMat4f("model", translate<float>(_pos * CHUNK_SIZE));

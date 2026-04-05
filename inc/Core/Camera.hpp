@@ -6,7 +6,7 @@
 /*   By: mbatty <mbatty@student.42angouleme.fr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/02 16:04:06 by mbatty            #+#    #+#             */
-/*   Updated: 2026/03/23 12:25:07 by mbatty           ###   ########.fr       */
+/*   Updated: 2026/04/05 11:39:07 by mbatty           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,6 +53,10 @@ class	Camera
 		{
 			return (lookAt<float>(Vec3f(pos), Vec3f(pos) + front, up));
 		}
+		Mat4f	getProjectionMatrix()
+		{
+			return (perspective<float>(fov, _aspect_ratio, 0.1, 1000.0));
+		}
 
 		float	yaw = 0;
 		float	pitch = 0;
@@ -61,8 +65,11 @@ class	Camera
 		Vec3f	up;
 		Frustum	frustum;
 		float	speed = 0;
+
+		int		fov = 90;
 	private:
-		void	_updatePlaneNormals(float aspectRatio);
+		float	_aspect_ratio;
+		void	_updatePlaneNormals();
 		Vec3f	_direction;
 		Vec3f	_lastPos;
 };

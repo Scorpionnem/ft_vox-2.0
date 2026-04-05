@@ -6,7 +6,7 @@
 /*   By: mbatty <mbatty@student.42angouleme.fr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/07 16:08:20 by mbatty            #+#    #+#             */
-/*   Updated: 2026/03/23 20:53:13 by mbatty           ###   ########.fr       */
+/*   Updated: 2026/04/05 11:40:58 by mbatty           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,8 @@ void	Camera::imgui(void)
 
 		ImGui::InputFloat("Pitch", &pitch);
 		ImGui::InputFloat("Yaw", &yaw);
+		ImGui::InputInt("FOV", &fov);
+		fov = std::clamp(fov, 1, 120);
 		ImGui::Text("Speed: %.3f", speed);
 	}
 	ImGui::End();
@@ -41,19 +43,21 @@ void	Camera::update(float delta, float aspectRatio)
 	if (yaw < 0)
 		yaw = 360;
 
+	_aspect_ratio = aspectRatio;
+
 	_direction.x = cos(radians(yaw)) * cos(radians(pitch));
 	_direction.y = sin(radians(pitch));
 	_direction.z = sin(radians(yaw)) * cos(radians(pitch));
 	front = normalize(_direction);
-	_updatePlaneNormals(aspectRatio);
+	_updatePlaneNormals();
 
 	speed = length(pos - _lastPos) / delta;
 	_lastPos = pos;
 }
 
-void	Camera::_updatePlaneNormals(float aspectRatio)
+void	Camera::_updatePlaneNormals()
 {
-	Mat4f	vp = perspective<float>(90, aspectRatio, 0.01, 1000) * getViewMatrix();
+	Mat4f	vp = getProjectionMatrix() * getViewMatrix();
 
 	frustum.left.A = vp(0,3) + vp(0,0);
 	frustum.left.B = vp(1,3) + vp(1,0);

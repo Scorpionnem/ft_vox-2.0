@@ -138,7 +138,6 @@ class	Chunk
 		ChunkWorldVec3i					_pos;
 		std::vector<ChunkBlockStateId>	_blocks;
 
-		// need to abstract this
 		uint16_t						_non_air_blocks = 0;
 
 		Mesh							_solid_mesh;

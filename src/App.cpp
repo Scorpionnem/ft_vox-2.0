@@ -48,17 +48,6 @@ void	App::_cast_ray(const Window::Events &events)
 
 	if (_ray_hit)
 	{
-		Mat4f	model = translate<float>(_ray_hit_pos);
-		model = model * translate<float>(Vec3f(0.5));
-		model = model * scale<float>(Vec3f(1.002));
-		model = model * translate<float>(Vec3f(-0.5));
-
-		_selected_block_shader.use();
-		_selected_block_shader.setMat4f("view", _cam.getViewMatrix());
-		_selected_block_shader.setMat4f("model", model);
-		_selected_block_shader.setMat4f("proj", perspective<float>(90, events.getAspectRatio(), 0.1, 1000.0));
-		_cube_mesh.draw();
-
 		if (events.getMouseBtnPressed(SDL_BUTTON_LEFT))
 		{
 			auto	chunk = _world.getChunk(worldToChunkWorld(_ray_hit_pos, CHUNK_SIZE));
@@ -88,21 +77,95 @@ void	App::_cast_ray(const Window::Events &events)
 	}
 }
 
-extern std::vector<std::shared_ptr<Biome>>	ALL_BIOMES;
+void	App::_update(const Window::Events &events)
+{
+	if (events.getKeyPressed(SDLK_F3))
+			_show_debug = !_show_debug;
+
+	updateCamera(_cam, events);
+
+	_world.setUpdateCenter(_cam.pos);
+	_world.update(_generation_threads, events.getDeltaTime());
+
+	_cast_ray(events);
+}
+
+void	App::_render(void)
+{
+	_atlas.bind(0);
+
+	_terrain_shader.use();
+	_terrain_shader.setMat4f("view", _cam.getViewMatrix());
+	_terrain_shader.setMat4f("proj", _cam.getProjectionMatrix());
+
+	_terrain_shader.setVec3f("RENDER_DISTANCE", _render_distance * CHUNK_SIZE);
+	_terrain_shader.setVec3f("VIEW_POS", _cam.pos);
+	_terrain_shader.setFloat("FOG_POWER", _fog_power);
+	_terrain_shader.setVec3f("FOG_COLOR", _sky_color);
+	_terrain_shader.setBool("FOG_TOGGLE", _fog_toggle);
+	_terrain_shader.setInt("CHUNK_SIZE", CHUNK_SIZE);
+	_terrain_shader.setVec3f("FOG_DISTANCE", _fog_distance);
+
+	glClearColor(_sky_color.x, _sky_color.y, _sky_color.z, 1.0);
+
+	auto	view = _world.getVision(_cam, _render_distance);
+	for (auto chunk : view)
+		chunk->draw(_terrain_shader);
+	// if (showDebug)
+	// {
+	// 	_bounding_box_shader.use();
+	// 	_bounding_box_shader.setMat4f("model", translate<float>(chunk->pos() * CHUNK_SIZE) * scale<float>(Vec3f(CHUNK_SIZE)));
+	// 	_bounding_box_shader.setMat4f("view", _cam.getViewMatrix());
+	// 	_bounding_box_shader.setMat4f("proj", perspective<float>(90, events.getAspectRatio(), 0.1, 1000.0));
+	// 	_cube_mesh.draw();
+	// }
+
+	if (_ray_hit)
+	{
+		Mat4f	model = translate<float>(_ray_hit_pos);
+		model = model * translate<float>(Vec3f(0.5));
+		model = model * scale<float>(Vec3f(1.002));
+		model = model * translate<float>(Vec3f(-0.5));
+
+		_selected_block_shader.use();
+		_selected_block_shader.setMat4f("view", _cam.getViewMatrix());
+		_selected_block_shader.setMat4f("model", model);
+		_selected_block_shader.setMat4f("proj", _cam.getProjectionMatrix());
+		_cube_mesh.draw();
+	}
+}
+
+void	App::_imgui(const Window::Events &events)
+{
+	if (_show_debug)
+	{
+		_world.imgui();
+		_cam.imgui();
+		_generation_threads.imgui();
+		if (ImGui::Begin("ft_vox"))
+		{
+			ImGui::Text("FPS: %.2f", 1.0 / events.getDeltaTime());
+			ImGui::InputFloat("Fog Power", &_fog_power);
+			ImGui::Checkbox("Toggle Fog", &_fog_toggle);
+			ImGui::SliderFloat3("Fog Distance", &_fog_distance.x, 0, max(_render_distance * CHUNK_SIZE + CHUNK_SIZE));
+			_fog_power = std::clamp(_fog_power, 1.0f, 16.0f);
+			ImGui::ColorPicker3("sky color", &_sky_color.x);
+		}
+		ImGui::End();
+
+		if (ImGui::Begin("generation"))
+		{
+			Vec2f	p = {_cam.pos.x, _cam.pos.z};
+			ImGui::Text("C: %.2f", Biome::get_continentalness(p));
+			ImGui::Text("E: %.2f", Biome::get_erosion(p));
+			ImGui::Text("T: %.2f", Biome::get_temperature(p));
+		}
+		ImGui::End();
+	}
+}
 
 void	App::_loop(void)
 {
-	_cam.pos.x = 0;
-	_cam.pos.y = 120;
-	_cam.pos.z = 0;
-
-	bool	showDebug = false;
-	float	fog_power = 4;
-	bool	fog_toggle = true;
-	Vec3f	sky_color(194 / 255.0, 235.0 / 255.0, 1.0);
-	Vec3f	render_distance = Vec3f(8);
-	Vec3f	fog_distance = render_distance * CHUNK_SIZE;
-
 	while (_window.is_open())
 	{
 		const Window::Events	&events = _window.pollEvents();
@@ -112,74 +175,11 @@ void	App::_loop(void)
 			break ;
 		}
 
-		updateCamera(_cam, events);
+		_update(events);
 
-		_world.setUpdateCenter(_cam.pos);
-		_world.update(_generation_threads, events.getDeltaTime());
+		_render();
 
-		auto	view = _world.getVision(_cam, render_distance);
-
-		_atlas.bind(0);
-
-		_terrain_shader.use();
-		_terrain_shader.setMat4f("view", _cam.getViewMatrix());
-		_terrain_shader.setMat4f("proj", perspective<float>(90, events.getAspectRatio(), 0.1, 1000.0));
-
-		_terrain_shader.setVec3f("RENDER_DISTANCE", render_distance * CHUNK_SIZE);
-		_terrain_shader.setVec3f("VIEW_POS", _cam.pos);
-		_terrain_shader.setFloat("FOG_POWER", fog_power);
-		_terrain_shader.setVec3f("FOG_COLOR", sky_color);
-		_terrain_shader.setBool("FOG_TOGGLE", fog_toggle);
-		_terrain_shader.setInt("CHUNK_SIZE", CHUNK_SIZE);
-		_terrain_shader.setVec3f("FOG_DISTANCE", fog_distance);
-
-		glClearColor(sky_color.x, sky_color.y, sky_color.z, 1.0);
-
-		for (auto chunk : view)
-		{
-			if (chunk->state() < Chunk::State::UPLOADED)
-				chunk->upload();
-			chunk->draw(_terrain_shader);
-
-			if (showDebug)
-			{
-				_bounding_box_shader.use();
-				_bounding_box_shader.setMat4f("model", translate<float>(chunk->pos() * CHUNK_SIZE) * scale<float>(Vec3f(CHUNK_SIZE)));
-				_bounding_box_shader.setMat4f("view", _cam.getViewMatrix());
-				_bounding_box_shader.setMat4f("proj", perspective<float>(90, events.getAspectRatio(), 0.1, 1000.0));
-				_cube_mesh.draw();
-			}
-		}
-
-		_cast_ray(events);
-
-		if (events.getKeyPressed(SDLK_F3))
-			showDebug = !showDebug;
-		if (showDebug)
-		{
-			_world.imgui();
-			_cam.imgui();
-			_generation_threads.imgui();
-			if (ImGui::Begin("ft_vox"))
-			{
-				ImGui::Text("FPS: %.2f", 1.0 / events.getDeltaTime());
-				ImGui::InputFloat("Fog Power", &fog_power);
-				ImGui::Checkbox("Toggle Fog", &fog_toggle);
-				ImGui::SliderFloat3("Fog Distance", &fog_distance.x, 0, max(render_distance * CHUNK_SIZE + CHUNK_SIZE));
-				fog_power = std::clamp(fog_power, 1.0f, 16.0f);
-				ImGui::ColorPicker3("sky color", &sky_color.x);
-			}
-			ImGui::End();
-
-			if (ImGui::Begin("generation"))
-			{
-				Vec2f	p = {_cam.pos.x, _cam.pos.z};
-				ImGui::Text("C: %.2f", Biome::get_continentalness(p));
-				ImGui::Text("E: %.2f", Biome::get_erosion(p));
-				ImGui::Text("T: %.2f", Biome::get_temperature(p));
-			}
-			ImGui::End();
-		}
+		_imgui(events);
 
 		_window.render();
 	}
@@ -205,8 +205,14 @@ void	App::_init()
 {
 	_window.open("ft_vox", 1024, 768);
 
+	_generation_threads.add(8);
+
 	_atlas.load("assets/textures/atlas.png");
 	_atlas.upload();
+
+	_cam.pos.x = 0;
+	_cam.pos.y = 120;
+	_cam.pos.z = 0;
 
 	_terrain_shader.load(GL_VERTEX_SHADER, "assets/shaders/mesh.vs");
 	_terrain_shader.load(GL_FRAGMENT_SHADER, "assets/shaders/mesh.fs");
@@ -245,7 +251,7 @@ void	App::_init()
 	_cube_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&FACE1[5]), sizeof(Face));
 	_cube_mesh.upload();
 
-	_generation_threads.add(8);
+	extern std::vector<std::shared_ptr<Biome>>	ALL_BIOMES;
 
 	ALL_BIOMES.push_back(std::make_shared<DesertBiome>());
 
