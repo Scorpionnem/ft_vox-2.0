@@ -6,6 +6,7 @@
 #include "Shader.hpp"
 #include "World.hpp"
 #include "Entity.hpp"
+#include "Skybox.hpp"
 #include "ThreadPool.hpp"
 #include <string>
 
@@ -27,12 +28,9 @@ class	App
 		Shader	_bounding_box_shader;
 		Mesh	_cube_mesh;
 
-		Shader	_skybox_shader;
-		Mesh	_skybox_mesh;
-		float	_sky_up_height = 0.0;
-		float	_sky_mix_distance = 4;
-		Vec3f	_sky_up_color = Vec3f(132 / 255.0, 210.0 / 255.0, 1.0);
-		Vec3f	_sky_down_color = Vec3f(194 / 255.0, 235.0 / 255.0, 1.0);
+		Chrono	_time;
+
+		Skybox	_skybox;
 
 		World	_world;
 

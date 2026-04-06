@@ -32,6 +32,7 @@ INCLUDE_DIRS :=	external/imgui/\
 
 SRCS :=	main\
 		App\
+		Skybox\
 		Core/Window\
 		Core/Camera\
 		Core/Resources/Shader\

@@ -10,50 +10,6 @@
 
 #include <imgui.h>
 
-float SKYBOX_VERTICES[] = {
-	-1.0f, -1.0f, -1.0f,
-	-1.0f,  1.0f, -1.0f,
-	1.0f, -1.0f, -1.0f,
-	1.0f,  1.0f, -1.0f,
-	1.0f, -1.0f, -1.0f,
-	-1.0f,  1.0f, -1.0f,
-
-	-1.0f, -1.0f, -1.0f,
-	-1.0f, -1.0f,  1.0f,
-	-1.0f,  1.0f, -1.0f,
-	-1.0f,  1.0f,  1.0f,
-	-1.0f,  1.0f, -1.0f,
-	-1.0f, -1.0f,  1.0f,
-
-	1.0f, -1.0f,  1.0f,
-	1.0f, -1.0f, -1.0f,
-	1.0f,  1.0f,  1.0f,
-	1.0f,  1.0f, -1.0f,
-	1.0f,  1.0f,  1.0f,
-	1.0f, -1.0f, -1.0f,
-
-	1.0f,  1.0f,  1.0f,
-	-1.0f,  1.0f,  1.0f,
-	-1.0f, -1.0f,  1.0f,
-	1.0f, -1.0f,  1.0f,
-	1.0f,  1.0f,  1.0f,
-	-1.0f, -1.0f,  1.0f,
-
-	1.0f,  1.0f,  1.0f,
-	1.0f,  1.0f, -1.0f,
-	-1.0f,  1.0f, -1.0f,
-	-1.0f,  1.0f,  1.0f,
-	1.0f,  1.0f,  1.0f,
-	-1.0f,  1.0f, -1.0f,
-
-	1.0f, -1.0f, -1.0f,
-	-1.0f, -1.0f,  1.0f,
-	-1.0f, -1.0f, -1.0f,
-	-1.0f, -1.0f,  1.0f,
-	1.0f, -1.0f, -1.0f,
-	1.0f, -1.0f,  1.0f
-};
-
 static bool	is_inside(Vec3f pos_a, Vec3f size_a, Vec3f pos_b, Vec3f size_b)
 {
 	return (
@@ -104,18 +60,24 @@ bool	_collides_with_world(Vec3f pos, Vec3f size, World &world)
 
 Vec3f	_solve_collisions(Vec3f pos, Vec3f size, Vec3f velocity, World &world)
 {
-	Vec3f	next_pos = pos + velocity;
-
-	Vec3f	hitbox_pos_x = Vec3f(next_pos.x - (size.x / 2.0), pos.y - (size.y / 2.0), pos.z - (size.z / 2.0));
-	Vec3f	hitbox_pos_y = Vec3f(pos.x - (size.x / 2.0), next_pos.y - (size.y / 2.0), pos.z - (size.z / 2.0));
-	Vec3f	hitbox_pos_z = Vec3f(pos.x - (size.x / 2.0), pos.y - (size.y / 2.0), next_pos.z - (size.z / 2.0));
-
-	if (_collides_with_world(hitbox_pos_x, size, world))
+	pos.x += velocity.x;
+	if (_collides_with_world(pos - (size / 2.0), size, world))
+	{
+		pos.x -= velocity.x;
 		velocity.x = 0;
-	if (_collides_with_world(hitbox_pos_y, size, world))
+	}
+	pos.y += velocity.y;
+	if (_collides_with_world(pos - (size / 2.0), size, world))
+	{
+		pos.y -= velocity.y;
 		velocity.y = 0;
-	if (_collides_with_world(hitbox_pos_z, size, world))
+	}
+	pos.z += velocity.z;
+	if (_collides_with_world(pos - (size / 2.0), size, world))
+	{
+		pos.z -= velocity.z;
 		velocity.z = 0;
+	}
 
 	return (velocity);
 }
@@ -203,39 +165,19 @@ void	App::_update(const Window::Events &events)
 	_world.update(_generation_threads, events.getDeltaTime());
 
 	_cast_ray(events);
-	_break_anim_timer += events.getDeltaTime();
-	if (_break_anim_timer >= 0.1)
-	{
-		_break_anim_frame++;
-		if (_break_anim_frame > 9)
-			_break_anim_frame = 0;
-		_break_anim_timer = 0;
-	}
+	// _break_anim_timer += events.getDeltaTime();
+	// if (_break_anim_timer >= 0.1)
+	// {
+	// 	_break_anim_frame++;
+	// 	if (_break_anim_frame > 9)
+	// 		_break_anim_frame = 0;
+	// 	_break_anim_timer = 0;
+	// }
 }
 
 void	App::_render(void)
 {
-	glDisable(GL_CULL_FACE);
-	glDisable(GL_DEPTH_TEST);
-	Mat4f	model = Mat4f(1.0);
-	Mat4f	view_no_translate = _cam.getViewMatrix();
-	view_no_translate.data[12] = 0;
-	view_no_translate.data[13] = 0;
-	view_no_translate.data[14] = 0;
-	view_no_translate.data[15] = 1;
-
-	_skybox_shader.use();
-	_skybox_shader.setMat4f("view", view_no_translate);
-	_skybox_shader.setMat4f("proj", _cam.getProjectionMatrix());
-	_skybox_shader.setMat4f("model", model);
-	_skybox_shader.setVec3f("SKYBOX_UP_COLOR", _sky_up_color);
-	_skybox_shader.setVec3f("SKYBOX_DOWN_COLOR", _sky_down_color);
-	_skybox_shader.setFloat("SKYBOX_UP_HEIGHT", _sky_up_height);
-	_skybox_shader.setFloat("SKYBOX_MIX_DISTANCE", _sky_mix_distance);
-
-	_skybox_mesh.draw();
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_DEPTH_TEST);
+	_skybox.render(_cam);
 
 	_atlas.bind(0);
 
@@ -246,7 +188,7 @@ void	App::_render(void)
 	_terrain_shader.setVec3f("RENDER_DISTANCE", _render_distance * CHUNK_SIZE);
 	_terrain_shader.setVec3f("VIEW_POS", Vec3f(0));
 	_terrain_shader.setFloat("FOG_POWER", _fog_power);
-	_terrain_shader.setVec3f("FOG_COLOR", _sky_down_color);
+	_terrain_shader.setVec3f("FOG_COLOR", _skybox.get_fog_color());
 	_terrain_shader.setBool("FOG_TOGGLE", _fog_toggle);
 	_terrain_shader.setInt("CHUNK_SIZE", CHUNK_SIZE);
 	_terrain_shader.setVec3f("FOG_DISTANCE", _fog_distance);
@@ -297,20 +239,7 @@ void	App::_imgui(const Window::Events &events)
 		}
 		ImGui::End();
 
-		if (ImGui::Begin("skybox / fog"))
-		{
-			ImGui::InputFloat("Sky up height", &_sky_up_height);
-			ImGui::InputFloat("Sky mix distance", &_sky_mix_distance);
-
-			ImGui::InputFloat("Fog Power", &_fog_power);
-			ImGui::Checkbox("Toggle Fog", &_fog_toggle);
-			ImGui::SliderFloat3("Fog Distance", &_fog_distance.x, 0, max(_render_distance * CHUNK_SIZE + CHUNK_SIZE));
-			_fog_power = std::clamp(_fog_power, 1.0f, 16.0f);
-
-			ImGui::ColorPicker3("sky down color", &_sky_down_color.x);
-			ImGui::ColorPicker3("sky up color", &_sky_up_color.x);
-		}
-		ImGui::End();
+		_skybox.imgui();
 
 		if (ImGui::Begin("generation"))
 		{
@@ -364,9 +293,13 @@ void	App::_loop(void)
 
 void	App::_init()
 {
+	_time.start();
+
 	_window.open("ft_vox", 1024, 768);
 
 	_generation_threads.add(8);
+
+	_skybox.init();
 
 	#define HITBOX_WIDTH 0.8
 	#define HITBOX_HEIGHT 1.8
@@ -391,10 +324,6 @@ void	App::_init()
 	_bounding_box_shader.link();
 	_bounding_box_shader.setInt("atlas", 0);
 
-	_skybox_shader.load(GL_VERTEX_SHADER, "assets/shaders/skybox.vs");
-	_skybox_shader.load(GL_FRAGMENT_SHADER, "assets/shaders/skybox.fs");
-	_skybox_shader.link();
-
 	_cube_mesh.add_vertex_layout(0, 3, GL_FLOAT, offsetof(Vertex, pos));
 	_cube_mesh.add_vertex_layout(1, 3, GL_FLOAT, offsetof(Vertex, normal));
 	_cube_mesh.add_vertex_layout(2, 3, GL_FLOAT, offsetof(Vertex, color));
@@ -416,12 +345,6 @@ void	App::_init()
 	_cube_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&FACE1[4]), sizeof(Face));
 	_cube_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&FACE1[5]), sizeof(Face));
 	_cube_mesh.upload();
-
-	_skybox_mesh.add_vertex_layout(0, 3, GL_FLOAT, 0);
-	_skybox_mesh.set_sizeof_layout(sizeof(Vec3f));
-
-	_skybox_mesh.add_triangle_data(reinterpret_cast<uint8_t*>(&SKYBOX_VERTICES), sizeof(SKYBOX_VERTICES));
-	_skybox_mesh.upload();
 
 	extern std::vector<std::shared_ptr<Biome>>	ALL_BIOMES;
 
