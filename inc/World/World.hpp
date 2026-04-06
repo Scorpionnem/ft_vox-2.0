@@ -26,7 +26,7 @@ class	World
 
 		void	setUpdateCenter(const WorldVec3i &pos)
 		{
-			_updateCenter = pos / CHUNK_SIZE;
+			_updateCenter = worldToChunkWorld(pos,CHUNK_SIZE);
 		}
 
 		std::shared_ptr<Chunk>	getChunk(const ChunkWorldVec3i &pos)
@@ -109,7 +109,7 @@ class	World
 		std::unordered_map<ChunkPosHash, std::shared_ptr<Chunk>>	_chunks;
 
 		ChunkWorldVec3i	_updateCenter;
-		Vec3i			_updateDistance = Vec3i(8, 8, 8);
+		Vec3i			_updateDistance = Vec3i(9);
 
 		std::mutex	_chunksMutex;
 };

@@ -5,6 +5,7 @@
 #include "Mesh.hpp"
 #include "Shader.hpp"
 #include "World.hpp"
+#include "Entity.hpp"
 #include "ThreadPool.hpp"
 #include <string>
 
@@ -36,6 +37,7 @@ class	App
 		World	_world;
 
 		Camera	_cam;
+		std::shared_ptr<Entity>	_player_entity;
 
 		ThreadPool	_generation_threads;
 
@@ -49,11 +51,13 @@ class	App
 
 		std::vector<std::shared_ptr<Chunk>>	_vision;
 
-		Vec3i	_render_distance = Vec3i(8);
+		Vec3i	_render_distance = Vec3i(9);
 		float	_fog_power = 4;
 		bool	_fog_toggle = true;
-		Vec3f	_fog_distance = Vec3f(256);
+		Vec3f	_fog_distance = Vec3f(288);
 	private:
+		void	updateCamera(Camera &cam, const Window::Events &events);
+
 		void	_cast_ray(const Window::Events &events);
 
 		void	_loop(void);

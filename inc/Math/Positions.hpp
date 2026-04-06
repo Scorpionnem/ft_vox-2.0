@@ -40,6 +40,11 @@ inline ChunkWorldVec3i	worldToChunkWorld(const WorldVec3i &pos, int chunk_size)
 	);
 }
 
+inline Vec3i	block_pos(Vec3f fpos)
+{
+	return (floor(fpos));
+}
+
 inline WorldVec3i	chunkLocalToWorld(const ChunkLocalVec3i &pos, const ChunkWorldVec3i &chunk_pos, int chunk_size)
 {
 	return (pos + (chunk_pos * chunk_size));

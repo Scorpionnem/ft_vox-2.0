@@ -56,9 +56,9 @@ Face	FACE1[6] =
 		Vertex(V6, Vec3f(1,0,0), UV00)
 	),
 	Face( // WEST
-		Vertex(V5, Vec3f(-1,0,0), UV01),
-		Vertex(V1, Vec3f(-1,0,0), UV00),
-		Vertex(V4, Vec3f(-1,0,0), UV10)
+		Vertex(V5, Vec3f(-1,0,0), UV00),
+		Vertex(V1, Vec3f(-1,0,0), UV01),
+		Vertex(V4, Vec3f(-1,0,0), UV11)
 	),
 };
 
@@ -90,9 +90,9 @@ Face	FACE2[6] =
 		Vertex(V7, Vec3f(1,0,0), UV10)
 	),
 	Face( // WEST
-		Vertex(V5, Vec3f(-1,0,0), UV01),
-		Vertex(V4, Vec3f(-1,0,0), UV10),
-		Vertex(V8, Vec3f(-1,0,0), UV11)
+		Vertex(V5, Vec3f(-1,0,0), UV00),
+		Vertex(V4, Vec3f(-1,0,0), UV11),
+		Vertex(V8, Vec3f(-1,0,0), UV10)
 	),
 };
 
@@ -294,7 +294,7 @@ void	Chunk::_generateFeatures()
 			}
 }
 
-bool	is_inside(Vec3i pos_a, Vec3i size_a, Vec3i pos_b, Vec3i size_b)
+static bool	is_inside(Vec3i pos_a, Vec3i size_a, Vec3i pos_b, Vec3i size_b)
 {
 	return (
 		pos_a.x < pos_b.x + size_b.x &&
@@ -365,6 +365,12 @@ void	Chunk::_generateStructures()
 						_setBlockFromWorld(b.pos, b.block);
 				}
 			}
+}
+
+float smoothstep(float edge0, float edge1, float x)
+{
+	float t = std::clamp((x - edge0) / (edge1 - edge0), 0.0f, 1.0f);
+	return (t * t * (3.0 - 2.0 * t));
 }
 
 void	Chunk::_generateTerrain()
