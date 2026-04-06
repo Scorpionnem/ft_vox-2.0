@@ -54,7 +54,73 @@ float SKYBOX_VERTICES[] = {
 	1.0f, -1.0f,  1.0f
 };
 
-void	updateCamera(Camera &cam, const Window::Events &events)
+static bool	is_inside(Vec3f pos_a, Vec3f size_a, Vec3f pos_b, Vec3f size_b)
+{
+	return (
+		pos_a.x < pos_b.x + size_b.x &&
+		pos_a.x + size_a.x > pos_b.x &&
+		pos_a.y < pos_b.y + size_b.y &&
+		pos_a.y + size_a.y > pos_b.y &&
+		pos_a.z < pos_b.z + size_b.z &&
+		pos_a.z + size_a.z > pos_b.z
+	);
+}
+
+bool	_collides_with_block(Vec3f pos, Vec3f size, Vec3i block_pos, World &world)
+{
+	if (is_inside(pos, size, block_pos, Vec3f(1)))
+	{
+		auto	chunk = world.getChunk(worldToChunkWorld(block_pos, CHUNK_SIZE));
+		if (chunk && chunk->state() >= Chunk::State::GENERATED)
+		{
+			BlockStateId block = chunk->getBlock(worldToChunkLocal(block_pos, CHUNK_SIZE));
+			if (block != BLOCK_AIR && block != BLOCK_TALL_GRASS && block != BLOCK_DEAD_BUSH && block != BLOCK_ROSE && block != BLOCK_DANDELION && block != BLOCK_SUGARCANE)
+				return (true);
+		}
+	}
+	return (false);
+}
+
+bool	_collides_with_world(Vec3f pos, Vec3f size, World &world)
+{
+	Vec3i	corner1_block = block_pos(pos);
+	Vec3i	corner2_block = block_pos(Vec3f(pos.x + size.x, pos.y, pos.z));
+	Vec3i	corner3_block = block_pos(Vec3f(pos.x, pos.y + size.y, pos.z));
+	Vec3i	corner4_block = block_pos(Vec3f(pos.x, pos.y, pos.z + size.z));
+	Vec3i	corner5_block = block_pos(Vec3f(pos.x + size.x, pos.y + size.y, pos.z));
+	Vec3i	corner7_block = block_pos(Vec3f(pos.x + size.x, pos.y, pos.z + size.z));
+	Vec3i	corner8_block = block_pos(Vec3f(pos.x, pos.y + size.y, pos.z + size.z));
+	Vec3i	corner6_block = block_pos(Vec3f(pos.x + size.x, pos.y + size.y, pos.z + size.z));
+
+	return (_collides_with_block(pos, size, corner1_block, world)
+			|| _collides_with_block(pos, size, corner2_block, world)
+			|| _collides_with_block(pos, size, corner3_block, world)
+			|| _collides_with_block(pos, size, corner4_block, world)
+			|| _collides_with_block(pos, size, corner5_block, world)
+			|| _collides_with_block(pos, size, corner6_block, world)
+			|| _collides_with_block(pos, size, corner7_block, world)
+			|| _collides_with_block(pos, size, corner8_block, world));
+}
+
+Vec3f	_solve_collisions(Vec3f pos, Vec3f size, Vec3f velocity, World &world)
+{
+	Vec3f	next_pos = pos + velocity;
+
+	Vec3f	hitbox_pos_x = Vec3f(next_pos.x - (size.x / 2.0), pos.y - (size.y / 2.0), pos.z - (size.z / 2.0));
+	Vec3f	hitbox_pos_y = Vec3f(pos.x - (size.x / 2.0), next_pos.y - (size.y / 2.0), pos.z - (size.z / 2.0));
+	Vec3f	hitbox_pos_z = Vec3f(pos.x - (size.x / 2.0), pos.y - (size.y / 2.0), next_pos.z - (size.z / 2.0));
+
+	if (_collides_with_world(hitbox_pos_x, size, world))
+		velocity.x = 0;
+	if (_collides_with_world(hitbox_pos_y, size, world))
+		velocity.y = 0;
+	if (_collides_with_world(hitbox_pos_z, size, world))
+		velocity.z = 0;
+
+	return (velocity);
+}
+
+void	App::updateCamera(Camera &cam, const Window::Events &events)
 {
 	float	speed = 5 * events.getDeltaTime();
 	float	sensibility = 50 * events.getDeltaTime();
@@ -62,18 +128,20 @@ void	updateCamera(Camera &cam, const Window::Events &events)
 	if (events.getKey(SDLK_LCTRL))
 		speed = 50 * events.getDeltaTime();
 
+	_player_entity->velocity = 0;
+
 	if (events.getKey(SDLK_w))
-		cam.pos = cam.pos + cam.front * speed;
+		_player_entity->velocity = _player_entity->velocity + (cam.front * speed);
 	if (events.getKey(SDLK_s))
-		cam.pos = cam.pos - cam.front * speed;
+		_player_entity->velocity = _player_entity->velocity + -1.0 * (cam.front * speed);
 	if (events.getKey(SDLK_SPACE))
-		cam.pos = cam.pos + cam.up * speed;
+		_player_entity->velocity = _player_entity->velocity + (cam.up * speed);
 	if (events.getKey(SDLK_LSHIFT))
-		cam.pos = cam.pos - cam.up * speed;
+		_player_entity->velocity = _player_entity->velocity + -1.0 * (cam.up * speed);
 	if (events.getKey(SDLK_a))
-		cam.pos = cam.pos - normalize(cross(cam.front, cam.up)) * speed;
+		_player_entity->velocity = _player_entity->velocity + -1.0 * (normalize(cross(cam.front, cam.up)) * speed);
 	if (events.getKey(SDLK_d))
-		cam.pos = cam.pos + normalize(cross(cam.front, cam.up)) * speed;
+		_player_entity->velocity = _player_entity->velocity + (normalize(cross(cam.front, cam.up)) * speed);
 	if (events.getKey(SDLK_UP))
 		cam.pitch += sensibility * 2;
 	if (events.getKey(SDLK_DOWN))
@@ -83,6 +151,9 @@ void	updateCamera(Camera &cam, const Window::Events &events)
 	if (events.getKey(SDLK_LEFT))
 		cam.yaw -= sensibility * 2;
 
+	_player_entity->update(events.getDeltaTime());
+
+	cam.pos = _player_entity->get_eye();
 	cam.update(events.getDeltaTime(), events.getAspectRatio());
 }
 
@@ -236,8 +307,6 @@ void	App::_imgui(const Window::Events &events)
 			ImGui::SliderFloat3("Fog Distance", &_fog_distance.x, 0, max(_render_distance * CHUNK_SIZE + CHUNK_SIZE));
 			_fog_power = std::clamp(_fog_power, 1.0f, 16.0f);
 
-
-
 			ImGui::ColorPicker3("sky down color", &_sky_down_color.x);
 			ImGui::ColorPicker3("sky up color", &_sky_up_color.x);
 		}
@@ -299,12 +368,13 @@ void	App::_init()
 
 	_generation_threads.add(8);
 
+	#define HITBOX_WIDTH 0.8
+	#define HITBOX_HEIGHT 1.8
+	#define CAMERA_HEIGHT 1.6
+	_player_entity = std::make_shared<Entity>(_world, Vec3d(0, 120, 0), Vec3f(HITBOX_WIDTH, HITBOX_HEIGHT, HITBOX_WIDTH), Vec3f(0, HITBOX_HEIGHT / 2, 0), Vec3f(0, CAMERA_HEIGHT, 0));
+
 	_atlas.load("assets/textures/atlas.png");
 	_atlas.upload();
-
-	_cam.pos.x = 0;
-	_cam.pos.y = 120;
-	_cam.pos.z = 0;
 
 	_terrain_shader.load(GL_VERTEX_SHADER, "assets/shaders/mesh.vs");
 	_terrain_shader.load(GL_FRAGMENT_SHADER, "assets/shaders/mesh.fs");
