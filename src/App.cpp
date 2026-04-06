@@ -60,6 +60,18 @@ void	App::_update(const Window::Events &events)
 	_selected_block.update(_cam, _world, events);
 }
 
+void	App::_draw_bounding(const Vec3f &pos, const Vec3f &size, const Vec3f &color)
+{
+	glDisable(GL_CULL_FACE);
+	_bounding_box_shader.use();
+	_bounding_box_shader.setMat4f("model", translate<float>(pos) * scale<float>(Vec3f(size)));
+	_bounding_box_shader.setMat4f("view", _cam.getViewMatrix());
+	_bounding_box_shader.setMat4f("proj", _cam.getProjectionMatrix());
+	_bounding_box_shader.setVec3f("COLOR", color);
+	_cube_mesh.draw();
+	glEnable(GL_CULL_FACE);
+}
+
 void	App::_render(void)
 {
 	_skybox.render(_cam);
@@ -78,13 +90,7 @@ void	App::_render(void)
 	{
 		chunk->draw(_terrain_shader, _cam.pos);
 		if (_show_debug)
-		{
-			_bounding_box_shader.use();
-			_bounding_box_shader.setMat4f("model", translate<float>(Vec3d(chunk->pos() * CHUNK_SIZE) - _cam.pos) * scale<float>(Vec3f(CHUNK_SIZE)));
-			_bounding_box_shader.setMat4f("view", _cam.getViewMatrix());
-			_bounding_box_shader.setMat4f("proj", _cam.getProjectionMatrix());
-			_cube_mesh.draw();
-		}
+			_draw_bounding(Vec3d(chunk->pos() * CHUNK_SIZE) - _cam.pos, CHUNK_SIZE, Vec3f(1, 0, 1));
 	}
 
 	_selected_block.render(_cam);
@@ -101,8 +107,7 @@ void	App::_imgui(const Window::Events &events)
 		_generation_threads.imgui();
 		_skybox.imgui();
 
-		ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-		if (ImGui::Begin("ft_minecraft", nullptr, ImGuiWindowFlags_NoMove))
+		if (ImGui::Begin("ft_minecraft"))
 		{
 			ImGui::Text("FPS: %.2f", 1.0 / events.getDeltaTime());
 			ImGui::Text("Draw calls: %lu", DRAW_CALLS);

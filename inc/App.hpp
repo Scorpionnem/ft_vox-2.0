@@ -46,6 +46,7 @@ class	App
 		bool	_fog_toggle = true;
 		Vec3f	_fog_distance = Vec3f(288);
 	private:
+		void	_draw_bounding(const Vec3f &pos, const Vec3f &size, const Vec3f &color);
 		void	updateCamera(Camera &cam, const Window::Events &events);
 
 		void	_loop(void);

@@ -13,7 +13,7 @@ struct	Vertex
 	}
 	Vec3f	pos;
 	Vec3f	normal;
-	Vec3f	color;
+	Vec3f	color = Vec3f(1);
 	Vec2f	uv;
 };
 

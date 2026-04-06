@@ -29,9 +29,11 @@ vec2	getAtlasUV(vec2 uv, int textureId)
 	return (atlasUV);
 }
 
+uniform float	WIDTH = 0.01;
+
 bool	is_outline(vec3 pos)
 {
-	float w = 0.01;
+	float w = WIDTH;
 
 	vec3 edgeLow  = step(pos, vec3(w));
 	vec3 edgeHigh = step(vec3(1.0 - w), pos);
