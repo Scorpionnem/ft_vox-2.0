@@ -4,21 +4,18 @@ in vec3 vFragPos;
 in vec3 vNormal;
 in vec2 vUv;
 in vec3 vColor;
-
 in vec3 vWorldPos;
 
 out vec4 outColor;
 
-uniform float spawn_fade;
-
-uniform vec3	RENDER_DISTANCE;
-uniform vec3	VIEW_POS;
-uniform int		CHUNK_SIZE;
+uniform float	spawn_fade;
 
 uniform vec3	FOG_DISTANCE;
 uniform bool	FOG_TOGGLE = true;
 uniform vec3	FOG_COLOR = vec3(0);
 uniform float	FOG_POWER = 4;
+
+uniform vec3	VIEW_POS = vec3(0);
 
 uniform sampler2D	atlas;
 

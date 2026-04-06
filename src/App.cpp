@@ -10,78 +10,6 @@
 
 #include <imgui.h>
 
-static bool	is_inside(Vec3f pos_a, Vec3f size_a, Vec3f pos_b, Vec3f size_b)
-{
-	return (
-		pos_a.x < pos_b.x + size_b.x &&
-		pos_a.x + size_a.x > pos_b.x &&
-		pos_a.y < pos_b.y + size_b.y &&
-		pos_a.y + size_a.y > pos_b.y &&
-		pos_a.z < pos_b.z + size_b.z &&
-		pos_a.z + size_a.z > pos_b.z
-	);
-}
-
-bool	_collides_with_block(Vec3f pos, Vec3f size, Vec3i block_pos, World &world)
-{
-	if (is_inside(pos, size, block_pos, Vec3f(1)))
-	{
-		auto	chunk = world.getChunk(worldToChunkWorld(block_pos, CHUNK_SIZE));
-		if (chunk && chunk->state() >= Chunk::State::GENERATED)
-		{
-			BlockStateId block = chunk->getBlock(worldToChunkLocal(block_pos, CHUNK_SIZE));
-			if (block != BLOCK_AIR && block != BLOCK_TALL_GRASS && block != BLOCK_DEAD_BUSH && block != BLOCK_ROSE && block != BLOCK_DANDELION && block != BLOCK_SUGARCANE)
-				return (true);
-		}
-	}
-	return (false);
-}
-
-bool	_collides_with_world(Vec3f pos, Vec3f size, World &world)
-{
-	Vec3i	corner1_block = block_pos(pos);
-	Vec3i	corner2_block = block_pos(Vec3f(pos.x + size.x, pos.y, pos.z));
-	Vec3i	corner3_block = block_pos(Vec3f(pos.x, pos.y + size.y, pos.z));
-	Vec3i	corner4_block = block_pos(Vec3f(pos.x, pos.y, pos.z + size.z));
-	Vec3i	corner5_block = block_pos(Vec3f(pos.x + size.x, pos.y + size.y, pos.z));
-	Vec3i	corner7_block = block_pos(Vec3f(pos.x + size.x, pos.y, pos.z + size.z));
-	Vec3i	corner8_block = block_pos(Vec3f(pos.x, pos.y + size.y, pos.z + size.z));
-	Vec3i	corner6_block = block_pos(Vec3f(pos.x + size.x, pos.y + size.y, pos.z + size.z));
-
-	return (_collides_with_block(pos, size, corner1_block, world)
-			|| _collides_with_block(pos, size, corner2_block, world)
-			|| _collides_with_block(pos, size, corner3_block, world)
-			|| _collides_with_block(pos, size, corner4_block, world)
-			|| _collides_with_block(pos, size, corner5_block, world)
-			|| _collides_with_block(pos, size, corner6_block, world)
-			|| _collides_with_block(pos, size, corner7_block, world)
-			|| _collides_with_block(pos, size, corner8_block, world));
-}
-
-Vec3f	_solve_collisions(Vec3f pos, Vec3f size, Vec3f velocity, World &world)
-{
-	pos.x += velocity.x;
-	if (_collides_with_world(pos - (size / 2.0), size, world))
-	{
-		pos.x -= velocity.x;
-		velocity.x = 0;
-	}
-	pos.y += velocity.y;
-	if (_collides_with_world(pos - (size / 2.0), size, world))
-	{
-		pos.y -= velocity.y;
-		velocity.y = 0;
-	}
-	pos.z += velocity.z;
-	if (_collides_with_world(pos - (size / 2.0), size, world))
-	{
-		pos.z -= velocity.z;
-		velocity.z = 0;
-	}
-
-	return (velocity);
-}
-
 void	App::updateCamera(Camera &cam, const Window::Events &events)
 {
 	float	speed = 5 * events.getDeltaTime();
@@ -119,60 +47,17 @@ void	App::updateCamera(Camera &cam, const Window::Events &events)
 	cam.update(events.getDeltaTime(), events.getAspectRatio());
 }
 
-void	App::_cast_ray(const Window::Events &events)
-{
-	_world.castRayToBlock(_cam.pos, _cam.front, 8, _ray_hit, _ray_hit_pos, _ray_prev_hit_pos);
-
-	if (_ray_hit)
-	{
-		if (events.getMouseBtnPressed(SDL_BUTTON_LEFT))
-		{
-			auto	chunk = _world.getChunk(worldToChunkWorld(_ray_hit_pos, CHUNK_SIZE));
-			if (chunk && chunk->state() >= Chunk::State::GENERATED)
-			{
-				chunk->setBlock(worldToChunkLocal(_ray_hit_pos, CHUNK_SIZE), BLOCK_AIR);
-				if (chunk->state() >= Chunk::State::MESHED)
-				{
-					chunk->mesh();
-					chunk->mesh_neighbours();
-				}
-			}
-		}
-		if (events.getMouseBtnPressed(SDL_BUTTON_RIGHT))
-		{
-			auto	chunk = _world.getChunk(worldToChunkWorld(_ray_prev_hit_pos, CHUNK_SIZE));
-			if (chunk && chunk->state() >= Chunk::State::GENERATED)
-			{
-				chunk->setBlock(worldToChunkLocal(_ray_prev_hit_pos, CHUNK_SIZE), BLOCK_COBBLESTONE);
-				if (chunk->state() >= Chunk::State::MESHED)
-				{
-					chunk->mesh();
-					chunk->mesh_neighbours();
-				}
-			}
-		}
-	}
-}
-
 void	App::_update(const Window::Events &events)
 {
 	if (events.getKeyPressed(SDLK_F3))
-			_show_debug = !_show_debug;
+		_show_debug = !_show_debug;
 
 	updateCamera(_cam, events);
 
 	_world.setUpdateCenter(_cam.pos);
 	_world.update(_generation_threads, events.getDeltaTime());
 
-	_cast_ray(events);
-	// _break_anim_timer += events.getDeltaTime();
-	// if (_break_anim_timer >= 0.1)
-	// {
-	// 	_break_anim_frame++;
-	// 	if (_break_anim_frame > 9)
-	// 		_break_anim_frame = 0;
-	// 	_break_anim_timer = 0;
-	// }
+	_selected_block.update(_cam, _world, events);
 }
 
 void	App::_render(void)
@@ -180,18 +65,13 @@ void	App::_render(void)
 	_skybox.render(_cam);
 
 	_atlas.bind(0);
-
 	_terrain_shader.use();
 	_terrain_shader.setMat4f("view", _cam.getViewMatrix());
 	_terrain_shader.setMat4f("proj", _cam.getProjectionMatrix());
-
-	_terrain_shader.setVec3f("RENDER_DISTANCE", _render_distance * CHUNK_SIZE);
-	_terrain_shader.setVec3f("VIEW_POS", Vec3f(0));
-	_terrain_shader.setFloat("FOG_POWER", _fog_power);
 	_terrain_shader.setVec3f("FOG_COLOR", _skybox.get_fog_color());
-	_terrain_shader.setBool("FOG_TOGGLE", _fog_toggle);
-	_terrain_shader.setInt("CHUNK_SIZE", CHUNK_SIZE);
 	_terrain_shader.setVec3f("FOG_DISTANCE", _fog_distance);
+	_terrain_shader.setFloat("FOG_POWER", _fog_power);
+	_terrain_shader.setBool("FOG_TOGGLE", _fog_toggle);
 
 	_vision = _world.getVision(_cam, _render_distance);
 	for (auto &chunk : _vision)
@@ -207,20 +87,7 @@ void	App::_render(void)
 		}
 	}
 
-	if (_ray_hit)
-	{
-		Mat4f	model = translate<float>(Vec3d(_ray_hit_pos) - _cam.pos);
-		model = model * translate<float>(Vec3f(0.5));
-		model = model * scale<float>(Vec3f(1.002));
-		model = model * translate<float>(Vec3f(-0.5));
-
-		_selected_block_shader.use();
-		_selected_block_shader.setMat4f("view", _cam.getViewMatrix());
-		_selected_block_shader.setMat4f("model", model);
-		_selected_block_shader.setMat4f("proj", _cam.getProjectionMatrix());
-		_selected_block_shader.setInt("BREAK_ANIM_FRAME", _break_anim_frame);
-		_cube_mesh.draw();
-	}
+	_selected_block.render(_cam);
 }
 
 uint64_t	DRAW_CALLS = 0;
@@ -232,15 +99,17 @@ void	App::_imgui(const Window::Events &events)
 		_world.imgui();
 		_cam.imgui();
 		_generation_threads.imgui();
-		if (ImGui::Begin("ft_vox"))
+		_skybox.imgui();
+
+		ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+		if (ImGui::Begin("ft_minecraft", nullptr, ImGuiWindowFlags_NoMove))
 		{
 			ImGui::Text("FPS: %.2f", 1.0 / events.getDeltaTime());
 			ImGui::Text("Draw calls: %lu", DRAW_CALLS);
+
+			ImGui::InputInt3("Render distance", &_render_distance.x);
 		}
 		ImGui::End();
-
-		_skybox.imgui();
-
 		if (ImGui::Begin("generation"))
 		{
 			Vec2f	p = Vec2f(_cam.pos.x, _cam.pos.z);
@@ -249,6 +118,7 @@ void	App::_imgui(const Window::Events &events)
 			ImGui::Text("T: %.2f", Biome::get_temperature(p));
 		}
 		ImGui::End();
+
 	}
 }
 
@@ -300,6 +170,7 @@ void	App::_init()
 	_generation_threads.add(8);
 
 	_skybox.init();
+	_selected_block.init();
 
 	#define HITBOX_WIDTH 0.8
 	#define HITBOX_HEIGHT 1.8
@@ -309,15 +180,10 @@ void	App::_init()
 	_atlas.load("assets/textures/atlas.png");
 	_atlas.upload();
 
-	_terrain_shader.load(GL_VERTEX_SHADER, "assets/shaders/mesh.vs");
-	_terrain_shader.load(GL_FRAGMENT_SHADER, "assets/shaders/mesh.fs");
+	_terrain_shader.load(GL_VERTEX_SHADER, "assets/shaders/terrain.vs");
+	_terrain_shader.load(GL_FRAGMENT_SHADER, "assets/shaders/terrain.fs");
 	_terrain_shader.link();
 	_terrain_shader.setInt("atlas", 0);
-
-	_selected_block_shader.load(GL_VERTEX_SHADER, "assets/shaders/selected_block.vs");
-	_selected_block_shader.load(GL_FRAGMENT_SHADER, "assets/shaders/selected_block.fs");
-	_selected_block_shader.link();
-	_selected_block_shader.setInt("atlas", 0);
 
 	_bounding_box_shader.load(GL_VERTEX_SHADER, "assets/shaders/bounding_box.vs");
 	_bounding_box_shader.load(GL_FRAGMENT_SHADER, "assets/shaders/bounding_box.fs");

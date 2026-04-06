@@ -294,17 +294,7 @@ void	Chunk::_generateFeatures()
 			}
 }
 
-static bool	is_inside(Vec3i pos_a, Vec3i size_a, Vec3i pos_b, Vec3i size_b)
-{
-	return (
-		pos_a.x < pos_b.x + size_b.x &&
-		pos_a.x + size_a.x > pos_b.x &&
-		pos_a.y < pos_b.y + size_b.y &&
-		pos_a.y + size_a.y > pos_b.y &&
-		pos_a.z < pos_b.z + size_b.z &&
-		pos_a.z + size_a.z > pos_b.z
-	);
-}
+bool	is_inside(Vec3f pos_a, Vec3f size_a, Vec3f pos_b, Vec3f size_b);
 
 void	Chunk::_generateStructures()
 {

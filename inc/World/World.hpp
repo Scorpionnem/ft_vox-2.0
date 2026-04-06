@@ -96,6 +96,11 @@ class	World
 				}
 			}
 		}
+
+		void	setUpdateDistance(const Vec3i &dist)
+		{
+			_updateDistance = dist;
+		}
 	private:
 		std::shared_ptr<Chunk>	_addChunk(const ChunkWorldVec3i &pos)
 		{
