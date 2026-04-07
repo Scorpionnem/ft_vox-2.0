@@ -65,6 +65,15 @@ class	Window
 		void	render();
 
 		bool	is_open() {return (_open);}
+
+		uint32_t	width()
+		{
+			return (_width);
+		}
+		uint32_t	height()
+		{
+			return (_height);
+		}
 	private:
 		bool		_open = false;
 		SDL_Window	*_window = NULL;

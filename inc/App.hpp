@@ -40,6 +40,7 @@ class	App
 		std::shared_ptr<Entity>	_player_entity;
 
 		bool	_show_debug = false;
+		bool	_ortho_proj = false;
 
 		Vec3i	_render_distance = Vec3i(9);
 		float	_fog_power = 4;

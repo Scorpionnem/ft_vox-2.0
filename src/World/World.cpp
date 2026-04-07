@@ -70,7 +70,7 @@ void	World::update(ThreadPool &genThreads, double delta)
 	genThreads.queue_task(tasks);
 }
 
-std::vector<std::shared_ptr<Chunk>>	World::getVision(const Camera &cam, const Vec3i &viewDistance)
+std::vector<std::shared_ptr<Chunk>>	World::getVision(const Camera &cam, const Vec3i &viewDistance, bool cull)
 {
 	std::vector<std::shared_ptr<Chunk>>	res;
 
@@ -89,7 +89,7 @@ std::vector<std::shared_ptr<Chunk>>	World::getVision(const Camera &cam, const Ve
 				if (chunk == nullptr || chunk->state() < Chunk::State::MESHED || !chunk->has_visible_faces())
 					continue ;
 
-				if (cam.frustum.isInside(Vec3(chunk->pos() * CHUNK_SIZE) - cam.pos, Vec3(chunk->pos() * CHUNK_SIZE + CHUNK_SIZE)  - cam.pos))
+				if (!cull || cam.frustum.isInside(Vec3(chunk->pos() * CHUNK_SIZE) - cam.pos, Vec3(chunk->pos() * CHUNK_SIZE + CHUNK_SIZE)  - cam.pos))
 					res.push_back(chunk);
 			}
 
@@ -99,4 +99,60 @@ std::vector<std::shared_ptr<Chunk>>	World::getVision(const Camera &cam, const Ve
 		return (length(cam.pos - ((c1->pos() * CHUNK_SIZE) + CHUNK_SIZE / 2)) > length(cam.pos - ((c2->pos() * CHUNK_SIZE) + CHUNK_SIZE / 2)));
 	});
 	return (res);
+}
+
+void	World::castRayToBlock(const WorldVec3f &pos, const Vec3f &dir, int MAX_STEPS, bool &hit, Vec3i &hit_pos, Vec3i &prev_hit_pos)
+{
+		prev_hit_pos = floor(pos);
+		hit_pos = floor(pos);
+		hit = false;
+
+		Vec3f	deltaDist = abs(Vec3f(1.0f) / dir);
+		Vec3f	sideDist = (sign(dir) * (Vec3f(hit_pos) - pos) + (sign(dir) * 0.5f) + 0.5f) * deltaDist;
+
+		Vec3i	rayStep = Vec3i(sign(dir));
+
+		for (int i = 0; i < MAX_STEPS; ++i)
+		{
+			prev_hit_pos = hit_pos;
+			_moveRay(hit_pos, sideDist, deltaDist, rayStep);
+			auto chunk = getChunk(worldToChunkWorld(hit_pos, CHUNK_SIZE));
+			if (!chunk || chunk->state() < Chunk::State::GENERATED)
+				continue ;
+			if (chunk->getBlock(worldToChunkLocal(hit_pos, CHUNK_SIZE)) != BLOCK_AIR)
+			{
+				hit = true;
+				break ;
+			}
+		}
+}
+
+void	World::_moveRay(Vec3i &mapPos, Vec3f &sideDist, const Vec3f &deltaDist, const Vec3i &rayStep)
+{
+	if (sideDist.x < sideDist.y)
+	{
+		if (sideDist.x < sideDist.z)
+		{
+			sideDist.x += deltaDist.x;
+			mapPos.x += rayStep.x;
+		}
+		else
+		{
+			sideDist.z += deltaDist.z;
+			mapPos.z += rayStep.z;
+		}
+	}
+	else
+	{
+		if (sideDist.y < sideDist.z)
+		{
+			sideDist.y += deltaDist.y;
+			mapPos.y += rayStep.y;
+		}
+		else
+		{
+			sideDist.z += deltaDist.z;
+			mapPos.z += rayStep.z;
+		}
+	}
 }

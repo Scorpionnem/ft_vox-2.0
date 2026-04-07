@@ -128,7 +128,7 @@ const Window::Events	&Window::pollEvents()
 				break ;
 			case SDL_MOUSEBUTTONUP:
 				_events._mouseBtn[event.button.button] = false;
-				_events._mouseBtnPressed[event.button.button] = true;
+				_events._mouseBtnLifted[event.button.button] = true;
 				break ;
 			case SDL_MOUSEWHEEL:
 				_events._mouseScroll = event.wheel.y;

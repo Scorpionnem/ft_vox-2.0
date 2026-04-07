@@ -17,15 +17,20 @@ class	Entity
 		}
 		~Entity() {}
 
-		void	update(float delta)
+		void	update(float delta);
+		void	render();
+		void	render_bounding(Camera &cam, Mesh &mesh, Shader &shader)
 		{
-			(void)delta;
-
-			Vec3f	hitbox_pos = Vec3f(pos.x + _hitbox_offset.x, pos.y + _hitbox_offset.y, pos.z + _hitbox_offset.z);
-
-			velocity = _solve_collisions(hitbox_pos, _hitbox_size, velocity, *_world);
-			pos = pos + velocity;
+			glDisable(GL_CULL_FACE);
+			shader.use();
+			shader.setMat4f("model", translate<float>(pos + _hitbox_offset - _hitbox_size / 2.0 - cam.pos) * scale<float>(Vec3f(_hitbox_size)));
+			shader.setMat4f("view", cam.getViewMatrix());
+			shader.setMat4f("proj", cam.getProjectionMatrix());
+			shader.setVec3f("COLOR", Vec3f(0, 1, 1));
+			mesh.draw();
+			glEnable(GL_CULL_FACE);
 		}
+
 		Vec3f	get_eye()
 		{
 			return (pos + _eye);

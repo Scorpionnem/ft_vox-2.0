@@ -34,6 +34,8 @@ SRCS :=	main\
 		App\
 		Skybox\
 		Collisions\
+		Entity\
+		SelectedBlock\
 		Core/Window\
 		Core/Camera\
 		Core/Resources/Shader\

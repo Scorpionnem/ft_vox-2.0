@@ -22,7 +22,7 @@ class	World
 		void	update(ThreadPool &genThreads, double delta);
 
 		// Gets all chunks in a camera's view
-		std::vector<std::shared_ptr<Chunk>>	getVision(const Camera &cam, const Vec3i &viewDistance);
+		std::vector<std::shared_ptr<Chunk>>	getVision(const Camera &cam, const Vec3i &viewDistance, bool cull);
 
 		void	setUpdateCenter(const WorldVec3i &pos)
 		{
@@ -41,67 +41,42 @@ class	World
 				return (NULL);
 			return (find->second);
 		}
-
-		void	castRayToBlock(const WorldVec3f &pos, const Vec3f &dir, int MAX_STEPS, bool &hit, Vec3i &hit_pos, Vec3i &prev_hit_pos)
+		BlockStateId	getBlock(const WorldVec3i &pos)
 		{
-				prev_hit_pos = floor(pos);
-				hit_pos = floor(pos);
-				hit = false;
-
-				Vec3f	deltaDist = abs(Vec3f(1.0f) / dir);
-				Vec3f	sideDist = (sign(dir) * (Vec3f(hit_pos) - pos) + (sign(dir) * 0.5f) + 0.5f) * deltaDist;
-
-				Vec3i	rayStep = Vec3i(sign(dir));
-
-				for (int i = 0; i < MAX_STEPS; ++i)
-				{
-					prev_hit_pos = hit_pos;
-					moveRay(hit_pos, sideDist, deltaDist, rayStep);
-					auto chunk = getChunk(worldToChunkWorld(hit_pos, CHUNK_SIZE));
-					if (!chunk || chunk->state() < Chunk::State::GENERATED)
-						continue ;
-					if (chunk->getBlock(worldToChunkLocal(hit_pos, CHUNK_SIZE)) != BLOCK_AIR)
-					{
-						hit = true;
-						break ;
-					}
-				}
+			std::shared_ptr<Chunk>	chunk = getChunk(worldToChunkWorld(pos, CHUNK_SIZE));
+			if (chunk && chunk->state() >= Chunk::State::GENERATED)
+				return (chunk->getBlock(worldToChunkLocal(pos, CHUNK_SIZE)));
+			throw std::runtime_error("Failed to get block (Chunk not loaded)");
 		}
-		void	moveRay(Vec3i &mapPos, Vec3f &sideDist, const Vec3f &deltaDist, const Vec3i &rayStep)
+		void	setBlock(const WorldVec3i &pos, BlockStateId block)
 		{
-			if (sideDist.x < sideDist.y)
+			std::shared_ptr<Chunk>	chunk = getChunk(worldToChunkWorld(pos, CHUNK_SIZE));
+			if (chunk && chunk->state() >= Chunk::State::GENERATED)
 			{
-				if (sideDist.x < sideDist.z)
+				chunk->setBlock(worldToChunkLocal(pos, CHUNK_SIZE), block);
+				if (chunk->state() >= Chunk::State::MESHED)
 				{
-					sideDist.x += deltaDist.x;
-					mapPos.x += rayStep.x;
+					chunk->mesh();
+					chunk->mesh_neighbours();
 				}
-				else
-				{
-					sideDist.z += deltaDist.z;
-					mapPos.z += rayStep.z;
-				}
+				return ;
 			}
-			else
-			{
-				if (sideDist.y < sideDist.z)
-				{
-					sideDist.y += deltaDist.y;
-					mapPos.y += rayStep.y;
-				}
-				else
-				{
-					sideDist.z += deltaDist.z;
-					mapPos.z += rayStep.z;
-				}
-			}
+			throw std::runtime_error("Failed to set block (Chunk not loaded)");
 		}
+		void	breakBlock(const WorldVec3i &pos)
+		{
+			setBlock(pos, BLOCK_AIR);
+		}
+
+		void	castRayToBlock(const WorldVec3f &pos, const Vec3f &dir, int MAX_STEPS, bool &hit, Vec3i &hit_pos, Vec3i &prev_hit_pos);
 
 		void	setUpdateDistance(const Vec3i &dist)
 		{
 			_updateDistance = dist;
 		}
 	private:
+		void	_moveRay(Vec3i &mapPos, Vec3f &sideDist, const Vec3f &deltaDist, const Vec3i &rayStep);
+
 		std::shared_ptr<Chunk>	_addChunk(const ChunkWorldVec3i &pos)
 		{
 			std::unique_lock<std::mutex>	lock(_chunksMutex);

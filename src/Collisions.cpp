@@ -17,12 +17,15 @@ bool	_collides_with_block(Vec3f pos, Vec3f size, Vec3i block_pos, World &world)
 {
 	if (is_inside(pos, size, block_pos, Vec3f(1)))
 	{
-		auto	chunk = world.getChunk(worldToChunkWorld(block_pos, CHUNK_SIZE));
-		if (chunk && chunk->state() >= Chunk::State::GENERATED)
+		try
 		{
-			BlockStateId block = chunk->getBlock(worldToChunkLocal(block_pos, CHUNK_SIZE));
+			BlockStateId block = world.getBlock(block_pos);
 			if (block != BLOCK_AIR && block != BLOCK_TALL_GRASS && block != BLOCK_DEAD_BUSH && block != BLOCK_ROSE && block != BLOCK_DANDELION && block != BLOCK_SUGARCANE)
 				return (true);
+		}
+		catch (...)
+		{
+			return (true);
 		}
 	}
 	return (false);

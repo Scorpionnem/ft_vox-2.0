@@ -94,7 +94,7 @@ class	Chunk
 		/* Tries to load a chunk, returns false instead of throwing */
 		bool	try_load(const std::string &path);
 
-		inline ChunkBlockStateId	getBlock(const ChunkLocalVec3i &pos)
+		inline BlockStateId	getBlock(const ChunkLocalVec3i &pos)
 		{
 			std::unique_lock<std::mutex>	lock(_chunkMutex);
 

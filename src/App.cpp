@@ -49,15 +49,22 @@ void	App::updateCamera(Camera &cam, const Window::Events &events)
 
 void	App::_update(const Window::Events &events)
 {
-	if (events.getKeyPressed(SDLK_F3))
-		_show_debug = !_show_debug;
-
-	updateCamera(_cam, events);
-
 	_world.setUpdateCenter(_cam.pos);
 	_world.update(_generation_threads, events.getDeltaTime());
 
 	_selected_block.update(_cam, _world, events);
+
+	if (events.getKeyPressed(SDLK_F3))
+		_show_debug = !_show_debug;
+	if (events.getKeyPressed(SDLK_F4))
+		_ortho_proj = !_ortho_proj;
+
+	if (_selected_block.hit() && events.getMouseBtnPressed(SDL_BUTTON_LEFT))
+		_world.breakBlock(_selected_block.hit_pos());
+	if (_selected_block.hit() && events.getMouseBtnPressed(SDL_BUTTON_RIGHT))
+		_world.setBlock(_selected_block.prev_hit_pos(), BLOCK_COBBLESTONE);
+
+	updateCamera(_cam, events);
 }
 
 void	App::_draw_bounding(const Vec3f &pos, const Vec3f &size, const Vec3f &color)
@@ -76,16 +83,22 @@ void	App::_render(void)
 {
 	_skybox.render(_cam);
 
+	float	aspect = (float)_window.width() / _window.height();
+	float	size = 200.0f;
+	Mat4f	proj = _cam.getProjectionMatrix();
+	if (_ortho_proj)
+		proj = ortho<float>(-size * aspect, size * aspect, -size, size, -1000, 1000);
+
 	_atlas.bind(0);
 	_terrain_shader.use();
-	_terrain_shader.setMat4f("view", _cam.getViewMatrix());
-	_terrain_shader.setMat4f("proj", _cam.getProjectionMatrix());
+	_terrain_shader.setMat4f("view", _cam.getViewMatrix()); //
+	_terrain_shader.setMat4f("proj", proj);
 	_terrain_shader.setVec3f("FOG_COLOR", _skybox.get_fog_color());
 	_terrain_shader.setVec3f("FOG_DISTANCE", _fog_distance);
 	_terrain_shader.setFloat("FOG_POWER", _fog_power);
 	_terrain_shader.setBool("FOG_TOGGLE", _fog_toggle);
 
-	_vision = _world.getVision(_cam, _render_distance);
+	_vision = _world.getVision(_cam, _render_distance, !_ortho_proj);
 	for (auto &chunk : _vision)
 	{
 		chunk->draw(_terrain_shader, _cam.pos);
@@ -94,6 +107,9 @@ void	App::_render(void)
 	}
 
 	_selected_block.render(_cam);
+
+	if (_show_debug)
+		_player_entity->render_bounding(_cam, _cube_mesh, _bounding_box_shader);
 }
 
 uint64_t	DRAW_CALLS = 0;

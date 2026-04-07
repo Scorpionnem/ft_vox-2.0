@@ -128,3 +128,17 @@ inline Mat4<T> lookAt(const Vec3<T> &eye, const Vec3<T> &center, const Vec3<T> &
 	m(3, 2) = dot(f, eye);
 	return (m);
 }
+
+template <typename T>
+inline Mat4<T> ortho(float left, float right, float bottom, float top, float near, float far)
+{
+	Mat4<T> m;
+	m.data[0] = 2.0 / (right - left);
+	m.data[5] = 2.0 / (top - bottom);
+	m.data[10] = -2.0 / (far - near);
+	m.data[12] = -((right + left) / (right - left));
+	m.data[13] = -((top + bottom) / (top - bottom));
+	m.data[14] = -((far + near) / (far - near));
+	m.data[15] = 1.0;
+	return (m);
+}
