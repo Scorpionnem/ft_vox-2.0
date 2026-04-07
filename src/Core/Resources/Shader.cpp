@@ -76,7 +76,7 @@ void	Shader::setMat4f(const std::string &name, Mat4f val)
 	glUniformMatrix4fv(glGetUniformLocation(_id, name.c_str()), 1, GL_FALSE, val.data);
 }
 
-std::string	Shader::_processShaderFile(const std::string &path)
+std::string	Shader::_processShaderFile(const std::string &path, bool rec)
 {
 	std::ifstream	file(path);
 	std::string		res;
@@ -87,8 +87,25 @@ std::string	Shader::_processShaderFile(const std::string &path)
 	std::string	line;
 	while (std::getline(file, line))
 	{
-		// Need to add #include and all
-		res += line + "\n";
+		#define MBATTY_IMPORT "#mbatty_import"
+		if (!line.compare(0, sizeof(MBATTY_IMPORT) - 1, MBATTY_IMPORT))
+		{
+			if (rec)
+				throw std::runtime_error("Recursive #mbatty_import: " + line);
+			size_t first = line.find('"');
+			size_t last = line.rfind('"');
+
+			if (first != std::string::npos && last != std::string::npos && first < last)
+			{
+				std::string	import_path = line.substr(first + 1, last - first - 1);
+
+				res += _processShaderFile(import_path, true);
+			}
+			else
+				throw std::runtime_error("Invalid #mbatty_import: " + line);
+		}
+		else
+			res += line + "\n";
 	}
 	return (res);
 }

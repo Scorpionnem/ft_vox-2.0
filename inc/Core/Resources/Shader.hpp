@@ -35,7 +35,7 @@ class	Shader
 		void	setVec3f(const std::string &name, Vec3f val);
 		void	setMat4f(const std::string &name, Mat4f val);
 	private:
-		std::string	_processShaderFile(const std::string &path);
+		std::string	_processShaderFile(const std::string &path, bool rec = false);
 		std::map<GLenum, std::string>	_files;
 		uint32_t	_id = 0;
 };
