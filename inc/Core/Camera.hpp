@@ -6,7 +6,7 @@
 /*   By: mbatty <mbatty@student.42angouleme.fr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/02 16:04:06 by mbatty            #+#    #+#             */
-/*   Updated: 2026/04/05 12:49:42 by mbatty           ###   ########.fr       */
+/*   Updated: 2026/04/08 16:40:08 by mbatty           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,9 +53,9 @@ class	Camera
 		{
 			return (lookAt<float>(Vec3f(0.0), Vec3f(0.0) + front, up));
 		}
-		Mat4f	getProjectionMatrix()
+		Mat4f	getProjectionMatrix(float near = 0.1, float far = 1000.0)
 		{
-			return (perspective<float>(fov, _aspect_ratio, 0.1, 1000.0));
+			return (perspective<float>(fov, _aspect_ratio, near, far));
 		}
 
 		double	yaw = 0;

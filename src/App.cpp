@@ -64,7 +64,32 @@ void	App::_update(const Window::Events &events)
 	if (_selected_block.hit() && events.getMouseBtnPressed(SDL_BUTTON_RIGHT))
 		_world.setBlock(_selected_block.prev_hit_pos(), BLOCK_COBBLESTONE);
 
-	updateCamera(_cam, events);
+	if (!_ortho_proj)
+	{
+		updateCamera(_cam, events);
+	}
+	else
+	{
+		float	sensibility = 50 * events.getDeltaTime();
+
+		if (events.getKey(SDLK_RIGHT))
+			_ortho_cam.yaw += sensibility * 2;
+		if (events.getKey(SDLK_LEFT))
+			_ortho_cam.yaw -= sensibility * 2;
+		if (events.getKey(SDLK_UP))
+			_ortho_cam.pitch += sensibility * 2;
+		if (events.getKey(SDLK_DOWN))
+			_ortho_cam.pitch -= sensibility * 2;
+
+		if (events.getMouseScroll() > 0)
+			_ortho_cam.fov -= 10;
+		if (events.getMouseScroll() < 0)
+			_ortho_cam.fov += 10;
+
+		_ortho_cam.pos = _cam.pos;
+		_ortho_cam.update(events.getDeltaTime(), events.getAspectRatio());
+	}
+
 }
 
 void	App::_draw_bounding(const Vec3f &pos, const Vec3f &size, const Vec3f &color)
@@ -81,22 +106,28 @@ void	App::_draw_bounding(const Vec3f &pos, const Vec3f &size, const Vec3f &color
 
 void	App::_render(void)
 {
-	_skybox.render(_cam);
+	Mat4f	proj = _cam.getProjectionMatrix();
+	Mat4f	view = _cam.getViewMatrix();
 
 	float	aspect = (float)_window.width() / _window.height();
-	float	size = 200.0f;
-	Mat4f	proj = _cam.getProjectionMatrix();
+	float	zoom = _ortho_cam.fov;
 	if (_ortho_proj)
-		proj = ortho<float>(-size * aspect, size * aspect, -size, size, -1000, 1000);
+	{
+		proj = ortho<float>(-zoom * aspect, zoom * aspect, -zoom, zoom, -1000, 1000);
+		view = _ortho_cam.getViewMatrix();
+	}
+
+	if (!_ortho_proj)
+		_skybox.render(_cam);
 
 	_atlas.bind(0);
 	_terrain_shader.use();
-	_terrain_shader.setMat4f("view", _cam.getViewMatrix()); //
+	_terrain_shader.setMat4f("view", view); //
 	_terrain_shader.setMat4f("proj", proj);
 	_terrain_shader.setVec3f("FOG_COLOR", _skybox.get_fog_color());
 	_terrain_shader.setVec3f("FOG_DISTANCE", _fog_distance);
 	_terrain_shader.setFloat("FOG_POWER", _fog_power);
-	_terrain_shader.setBool("FOG_TOGGLE", _fog_toggle);
+	_terrain_shader.setBool("FOG_TOGGLE", _fog_toggle && !_ortho_proj);
 
 	_vision = _world.getVision(_cam, _render_distance, !_ortho_proj);
 	for (auto &chunk : _vision)
@@ -105,6 +136,9 @@ void	App::_render(void)
 		if (_show_debug)
 			_draw_bounding(Vec3d(chunk->pos() * CHUNK_SIZE) - _cam.pos, CHUNK_SIZE, Vec3f(1, 0, 1));
 	}
+
+	if (_ortho_proj)
+		return ;
 
 	_selected_block.render(_cam);
 
@@ -192,6 +226,8 @@ void	App::_init()
 
 	_skybox.init();
 	_selected_block.init();
+
+	_ortho_cam.fov = 350;
 
 	#define HITBOX_WIDTH 0.8
 	#define HITBOX_HEIGHT 1.8

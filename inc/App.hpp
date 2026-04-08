@@ -37,6 +37,7 @@ class	App
 
 		SelectedBlock			_selected_block;
 		Camera					_cam;
+		Camera					_ortho_cam;
 		std::shared_ptr<Entity>	_player_entity;
 
 		bool	_show_debug = false;
