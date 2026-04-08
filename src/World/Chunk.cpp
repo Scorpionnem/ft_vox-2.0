@@ -363,9 +363,66 @@ float smoothstep(float edge0, float edge1, float x)
 	return (t * t * (3.0 - 2.0 * t));
 }
 
+#define CAVE_NOISE_STEP_SIZE 4
+#define CAVE_NOISE_MAP_SIZE (CHUNK_SIZE / CAVE_NOISE_STEP_SIZE + 1)
+
+static uint16_t	_getCaveMapIndex(const Vec3i &pos)
+{
+	return (pos.x + pos.y * CAVE_NOISE_MAP_SIZE + pos.z * CAVE_NOISE_MAP_SIZE * CAVE_NOISE_MAP_SIZE);
+}
+
+static float	_sampleCaveMap(const std::vector<float> &cave_map, const Vec3f &grid_pos)
+{
+	int	x0 = static_cast<int>(grid_pos.x);
+	int	y0 = static_cast<int>(grid_pos.y);
+	int	z0 = static_cast<int>(grid_pos.z);
+
+	int	x1 = x0 + 1;
+	int	y1 = y0 + 1;
+	int	z1 = z0 + 1;
+
+	float	tx = grid_pos.x - x0;
+	float	ty = grid_pos.y - y0;
+	float	tz = grid_pos.z - z0;
+
+	float	c000 = cave_map[_getCaveMapIndex(Vec3i(x0,y0,z0))];
+	float	c100 = cave_map[_getCaveMapIndex(Vec3i(x1,y0,z0))];
+	float	c010 = cave_map[_getCaveMapIndex(Vec3i(x0,y1,z0))];
+	float	c110 = cave_map[_getCaveMapIndex(Vec3i(x1,y1,z0))];
+	float	c001 = cave_map[_getCaveMapIndex(Vec3i(x0,y0,z1))];
+	float	c101 = cave_map[_getCaveMapIndex(Vec3i(x1,y0,z1))];
+	float	c011 = cave_map[_getCaveMapIndex(Vec3i(x0,y1,z1))];
+	float	c111 = cave_map[_getCaveMapIndex(Vec3i(x1,y1,z1))];
+
+	float	c00 = lerp(c000, c100, tx);
+	float	c10 = lerp(c010, c110, tx);
+	float	c01 = lerp(c001, c101, tx);
+	float	c11 = lerp(c011, c111, tx);
+
+	float	c0 = lerp(c00, c10, ty);
+	float	c1 = lerp(c01, c11, ty);
+
+	return (lerp(c0, c1, tz));
+}
+
 void	Chunk::_generateTerrain()
 {
+	std::vector<float> cave_noise_map;
+
+	cave_noise_map.reserve(CAVE_NOISE_MAP_SIZE * CAVE_NOISE_MAP_SIZE * CAVE_NOISE_MAP_SIZE);
+
 	ChunkLocalVec3i	pos;
+
+	for (pos.x = 0; pos.x < CAVE_NOISE_MAP_SIZE; pos.x++)
+		for (pos.y = 0; pos.y < CAVE_NOISE_MAP_SIZE; pos.y++)
+			for (pos.z = 0; pos.z < CAVE_NOISE_MAP_SIZE; pos.z++)
+			{
+				WorldVec3i	wp = chunkLocalToWorld(ChunkLocalVec3i(pos.x * CAVE_NOISE_STEP_SIZE, pos.y * CAVE_NOISE_STEP_SIZE, pos.z * CAVE_NOISE_STEP_SIZE), _pos, CHUNK_SIZE);
+
+				float	intensity = smoothstep(0.0, 100, 100);
+				float	v = noise(wp, 0.01, 1, 4) * intensity;
+				cave_noise_map[_getCaveMapIndex(pos)] = v;
+			}
 
 	for (pos.x = 0; pos.x < CHUNK_SIZE; pos.x++)
 		for (pos.z = 0; pos.z < CHUNK_SIZE; pos.z++)
@@ -380,6 +437,15 @@ void	Chunk::_generateTerrain()
 			for (pos.y = 0; pos.y < CHUNK_SIZE; pos.y++)
 			{
 				WorldVec3i	wp = chunkLocalToWorld(pos, _pos, CHUNK_SIZE);
+
+				Vec3f	cave_grid_pos = Vec3f(pos) / CAVE_NOISE_STEP_SIZE;
+
+				float caveNoise = _sampleCaveMap(cave_noise_map, cave_grid_pos);
+				if (wp.y <= max_height && caveNoise > 0.2)
+				{
+					_setBlock(pos, BLOCK_AIR);
+					continue ;
+				}
 
 				if (!dominant_biome)
 					_setBlock(pos, BLOCK_BEDROCK);

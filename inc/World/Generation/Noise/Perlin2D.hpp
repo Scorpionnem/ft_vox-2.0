@@ -54,7 +54,7 @@ inline float	noise(const Vec2f &pos, float freq, float amp, int noisiness)
 	float	res = 0;
 	for (int i = 0; i < noisiness; i++)
 	{
-		res += perlin(Vec2f(pos.x * freq, pos.y * freq)) * amp;
+		res += perlin(Vec2f(pos) * freq) * amp;
 
 		freq *= 2;
 		amp /= 2;

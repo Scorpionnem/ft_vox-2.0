@@ -133,7 +133,7 @@ void	App::_render(void)
 	for (auto &chunk : _vision)
 	{
 		chunk->draw(_terrain_shader, _cam.pos);
-		if (_show_debug)
+		if (_show_debug && !_ortho_proj)
 			_draw_bounding(Vec3d(chunk->pos() * CHUNK_SIZE) - _cam.pos, CHUNK_SIZE, Vec3f(1, 0, 1));
 	}
 

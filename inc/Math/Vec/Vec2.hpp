@@ -42,6 +42,11 @@ struct	Vec2
 	T	x, y;
 };
 
+template <typename T>
+Vec2<T>	operator*(T v, const Vec2<T> &vec)
+{
+	return (Vec2<T>(vec.x * v, vec.y * v));
+}
 
 template <typename T>
 std::ostream &operator<<(std::ostream &s, Vec2<T> vec)
