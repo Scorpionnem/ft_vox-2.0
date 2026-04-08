@@ -36,5 +36,5 @@ class	SelectedBlock
 		Mesh		_mesh;
 
 		int			_break_anim_frame = -1;
-		float		_break_anim_timer = 0;
+		// float		_break_anim_timer = 0;
 };
